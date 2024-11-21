@@ -1,5 +1,5 @@
 <?php
-require_once '../../config/database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 header('Content-Type: application/json');
 
@@ -190,6 +190,30 @@ try {
             }
             break;
 
+        case 'get_usuario':
+            $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            
+            if (!$id) {
+                throw new Exception('ID do usuário não fornecido');
+            }
+
+            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = ?");
+            $stmt->execute([$id]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($usuario) {
+                echo json_encode([
+                    'success' => true,
+                    'usuario' => $usuario
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Usuário não encontrado'
+                ]);
+            }
+            break;
+
         case 'status':
             $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
             $status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
@@ -217,3 +241,4 @@ try {
         'message' => $e->getMessage()
     ]);
 }
+?>

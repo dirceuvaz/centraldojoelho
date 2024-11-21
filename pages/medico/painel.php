@@ -209,7 +209,7 @@ try {
     </style>
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #231F5D;">
         <div class="container">
             <a class="navbar-brand" href="index.php?page=medico/painel">Central do Joelho</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

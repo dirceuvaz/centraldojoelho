@@ -309,9 +309,9 @@ $pdo = getConnection();
                         <div class="col-md-4">
                             <div class="card h-100 shadow-sm">
                                 <div class="card-body text-center">
-                                    <i class="bi bi-gear icon-large"></i>
-                                    <h5 class="card-title">Configurações</h5>
-                                    <p class="card-text">Gerencie usuários e configurações do sistema</p>
+                                    <i class="bi bi-people icon-large"></i>
+                                    <h5 class="card-title">Usuários</h5>
+                                    <p class="card-text">Gerencie usuários Liberar acesso</p>
                                     <a href="index.php?page=admin/usuarios" class="btn btn-warning">Acessar</a>
                                 </div>
                             </div>

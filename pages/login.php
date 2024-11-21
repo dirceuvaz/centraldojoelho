@@ -100,11 +100,11 @@
                        <?php echo isset($_COOKIE['remember_email']) ? 'checked' : ''; ?>>
                 <label class="form-check-label" for="lembrar">Lembrar-me</label>
             </div>
-            <button type="submit" class="btn btn-primary w-100">
+            <button type="submit" class="btn btn-success w-100">
                 <i class="bi bi-box-arrow-in-right"></i> Entrar
             </button>
         </form>
-        <a href="index.php?page=cadastro" class="btn btn-outline-primary w-100 mt-3">
+        <a href="index.php?page=cadastro" class="btn btn-warning w-100 mt-3">
             Novo Paciente? Cadastre-se
         </a>
     </div>

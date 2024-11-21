@@ -209,7 +209,7 @@ $problemas = [
                     </div>
 
                     <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <button type="submit" class="btn btn-success w-100 mb-3">
                             <i class="bi bi-check-circle"></i> Confirmar Cadastro
                         </button>
                         <a href="index.php" class="btn btn-link w-100">
