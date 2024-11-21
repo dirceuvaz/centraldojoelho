@@ -49,21 +49,25 @@ try {
             $erros = validarDados($dados);
             
             if (empty($erros)) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO reabilitacao (titulo, texto, momento, tipo, id_medico, data_criacao, data_atualizacao)
-                    VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-                ");
-                
-                if ($stmt->execute([
-                    $dados['titulo'],
-                    $dados['texto'],
-                    $dados['momento'],
-                    $dados['tipo'],
-                    $_SESSION['user_id']
-                ])) {
-                    header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação criada com sucesso!');
-                } else {
-                    header('Location: index.php?page=medico/reabilitacao&erro=Erro ao criar orientação');
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO reabilitacao (titulo, texto, momento, tipo, id_medico, data_criacao, data_atualizacao)
+                        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+                    ");
+                    
+                    $stmt->execute([
+                        $dados['titulo'],
+                        $dados['texto'],
+                        $dados['momento'],
+                        $dados['tipo'],
+                        $_SESSION['user_id']
+                    ]);
+                    
+                    header("Location: index.php?page=medico/reabilitacao&sucesso=Orientação criada com sucesso!");
+                    exit;
+                } catch (PDOException $e) {
+                    header("Location: index.php?page=medico/reabilitacao&erro=Erro ao criar orientação: " . $e->getMessage());
+                    exit;
                 }
             } else {
                 header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode(implode(", ", $erros)));
@@ -87,27 +91,31 @@ try {
             $erros = validarDados($dados);
             
             if (empty($erros)) {
-                $stmt = $pdo->prepare("
-                    UPDATE reabilitacao 
-                    SET titulo = ?, 
-                        texto = ?,
-                        momento = ?,
-                        tipo = ?,
-                        data_atualizacao = NOW()
-                    WHERE id = ? AND id_medico = ?
-                ");
-                
-                if ($stmt->execute([
-                    $dados['titulo'],
-                    $dados['texto'],
-                    $dados['momento'],
-                    $dados['tipo'],
-                    $dados['id'],
-                    $_SESSION['user_id']
-                ])) {
-                    header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação atualizada com sucesso!');
-                } else {
-                    header('Location: index.php?page=medico/reabilitacao&erro=Erro ao atualizar orientação');
+                try {
+                    $stmt = $pdo->prepare("
+                        UPDATE reabilitacao 
+                        SET titulo = ?, 
+                            texto = ?,
+                            momento = ?,
+                            tipo = ?,
+                            data_atualizacao = NOW()
+                        WHERE id = ? AND id_medico = ?
+                    ");
+                    
+                    $stmt->execute([
+                        $dados['titulo'],
+                        $dados['texto'],
+                        $dados['momento'],
+                        $dados['tipo'],
+                        $dados['id'],
+                        $_SESSION['user_id']
+                    ]);
+                    
+                    header("Location: index.php?page=medico/reabilitacao&sucesso=Orientação atualizada com sucesso!");
+                    exit;
+                } catch (PDOException $e) {
+                    header("Location: index.php?page=medico/reabilitacao&erro=Erro ao atualizar orientação: " . $e->getMessage());
+                    exit;
                 }
             } else {
                 header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode(implode(", ", $erros)));
@@ -120,13 +128,15 @@ try {
                 exit;
             }
 
-            $stmt = $pdo->prepare("DELETE FROM reabilitacao WHERE id = ? AND id_medico = ?");
-            if ($stmt->execute([$_GET['orientacao_id'], $_SESSION['user_id']])) {
-                header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação excluída com sucesso!');
-            } else {
-                header('Location: index.php?page=medico/reabilitacao&erro=Erro ao excluir orientação');
+            try {
+                $stmt = $pdo->prepare("DELETE FROM reabilitacao WHERE id = ? AND id_medico = ?");
+                $stmt->execute([$_GET['orientacao_id'], $_SESSION['user_id']]);
+                header("Location: index.php?page=medico/reabilitacao&sucesso=Orientação excluída com sucesso!");
+                exit;
+            } catch (PDOException $e) {
+                header("Location: index.php?page=medico/reabilitacao&erro=Erro ao excluir orientação: " . $e->getMessage());
+                exit;
             }
-            exit;
 
         case 'buscar':
             if (empty($_GET['id'])) {

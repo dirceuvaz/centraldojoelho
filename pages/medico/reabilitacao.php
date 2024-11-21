@@ -45,10 +45,12 @@ if (isset($_GET['editar']) && isset($_SESSION['temp_orientacao'])) {
 
 // Exibir mensagens de sucesso ou erro
 if (isset($_GET['sucesso'])) {
-    echo '<div class="alert alert-success">' . htmlspecialchars($_GET['sucesso']) . '</div>';
+    $mensagem = htmlspecialchars($_GET['sucesso']);
+    echo "<script>window.addEventListener('DOMContentLoaded', () => { mostrarMensagem('$mensagem'); });</script>";
 }
 if (isset($_GET['erro'])) {
-    echo '<div class="alert alert-danger">' . htmlspecialchars($_GET['erro']) . '</div>';
+    $mensagem = htmlspecialchars($_GET['erro']);
+    echo "<script>window.addEventListener('DOMContentLoaded', () => { mostrarMensagem('$mensagem'); });</script>";
 }
 ?>
 <!DOCTYPE html>
@@ -91,12 +93,7 @@ if (isset($_GET['erro'])) {
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
-                            <i class="bi bi-person-circle"></i> Perfil
-                        </a>
-                    </li>
+                <ul class="navbar-nav ms-auto">                    
                     <li class="nav-item">
                         <a class="nav-link" href="logout.php">
                             <i class="bi bi-box-arrow-right"></i> Sair
@@ -234,48 +231,32 @@ if (isset($_GET['erro'])) {
         </div>
     </div>
 
-    <!-- Modal Perfil -->
-    <div class="modal fade" id="perfilModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- Modal de Mensagens -->
+    <div id="modalMensagem" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
-                <form action="index.php?page=medico/perfil_process" method="POST">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Meu Perfil</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Nome</label>
-                            <input type="text" class="form-control" name="nome" value="<?php echo htmlspecialchars($medico['nome']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">E-mail</label>
-                            <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($medico['email']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">CRM</label>
-                            <input type="text" class="form-control" name="crm" value="<?php echo htmlspecialchars($medico['crm']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Especialidade</label>
-                            <input type="text" class="form-control" name="especialidade" value="<?php echo htmlspecialchars($medico['especialidade']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nova Senha</label>
-                            <input type="password" class="form-control" name="senha" placeholder="Deixe em branco para manter a atual">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                    </div>
-                </form>
+                <div class="modal-header">
+                    <h5 class="modal-title">Aviso</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p id="mensagemTexto"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function mostrarMensagem(mensagem) {
+            document.getElementById('mensagemTexto').textContent = mensagem;
+            const modalMensagem = new bootstrap.Modal(document.getElementById('modalMensagem'));
+            modalMensagem.show();
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             let editor;
             const formOrientacao = document.getElementById('formOrientacao');
@@ -333,7 +314,7 @@ if (isset($_GET['erro'])) {
 
                 if (!titulo || !momento || !tipo || !texto) {
                     e.preventDefault();
-                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    mostrarMensagem('Por favor, preencha todos os campos obrigatórios.');
                     return false;
                 }
 
@@ -352,11 +333,24 @@ if (isset($_GET['erro'])) {
 
             // Manipulador para os botões de excluir
             document.querySelectorAll('.excluir-orientacao').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    if (confirm('Tem certeza que deseja excluir esta orientação?')) {
-                        window.location.href = 'index.php?page=medico/reabilitacao_process&action=excluir&orientacao_id=' + this.getAttribute('data-id');
-                    }
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const id = this.getAttribute('data-id');
+                    mostrarMensagem('Tem certeza que deseja excluir esta orientação?');
+                    document.getElementById('modalMensagem').addEventListener('hidden.bs.modal', function () {
+                        if (document.getElementById('mensagemTexto').textContent === 'Tem certeza que deseja excluir esta orientação?') {
+                            window.location.href = 'index.php?page=medico/reabilitacao_process&action=excluir&orientacao_id=' + id;
+                        }
+                    }, { once: true });
                 });
+            });
+
+            // Fechar o modal de orientação após mostrar mensagem de sucesso
+            document.getElementById('modalMensagem').addEventListener('hidden.bs.modal', function () {
+                const mensagem = document.getElementById('mensagemTexto').textContent;
+                if (mensagem.includes('sucesso')) {
+                    modalOrientacao.hide();
+                }
             });
         });
     </script>
