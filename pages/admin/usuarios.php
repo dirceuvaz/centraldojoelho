@@ -372,7 +372,7 @@ $usuarios = $stmt->fetchAll();
                 </div>
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=admin/painel">
+                        <a class="nav-link active" href="index.php?page=admin/painel">
                             <i class="bi bi-speedometer2"></i> Painel
                         </a>
                     </li>
@@ -449,12 +449,12 @@ $usuarios = $stmt->fetchAll();
                                     <ul class="nav flex-column">
                                         <li class="nav-item">
                                             <a class="nav-link" href="index.php?page=admin/videos">
-                                                <i class="bi bi-camera-video"></i> Vídeos
+                                                <i class="bi bi-play-circle"></i> Vídeos
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link" href="index.php?page=admin/arquivos">
-                                                <i class="bi bi-folder"></i> Arquivos
+                                                <i class="bi bi-file-earmark"></i> Arquivos
                                             </a>
                                         </li>
                                     </ul>
@@ -463,27 +463,43 @@ $usuarios = $stmt->fetchAll();
                         </div>
                     </div>
 
-                    <!-- Menu Sistema -->
-                    <li class="nav-item">
-                        <a class="nav-link active" href="index.php?page=admin/usuarios">
-                            <i class="bi bi-people"></i> Usuários
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=admin/notificacoes">
-                            <i class="bi bi-bell"></i> Notificações
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=admin/configuracoes">
-                            <i class="bi bi-gear"></i> Configurações
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" href="index.php?page=logout">
-                            <i class="bi bi-box-arrow-right"></i> Sair
-                        </a>
-                    </li>
+                    <!-- Menu Configurações -->
+                    <div class="accordion accordion-flush" id="menuConfiguracoes">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#configuracoesCollapse" aria-expanded="true">
+                                    <i class="bi bi-gear me-2"></i> Configurações
+                                </button>
+                            </h2>
+                            <div id="configuracoesCollapse" class="accordion-collapse collapse show">
+                                <div class="accordion-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="index.php?page=admin/notificacoes">
+                                                <i class="bi bi-bell"></i> Notificações
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="index.php?page=admin/usuarios">
+                                                <i class="bi bi-people"></i> Usuários
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="index.php?page=admin/relatorios">
+                                                <i class="bi bi-file-earmark-spreadsheet"></i> Relatórios
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="index.php?page=admin/config-gerais">
+                                                <i class="bi bi-gear"></i> Configurações Gerais
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </ul>
             </div>
 
