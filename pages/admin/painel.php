@@ -288,7 +288,7 @@ $pdo = getConnection();
                                     <i class="bi bi-headset icon-large"></i>                                    
                                     <h5 class="card-title">Atendimento</h5>
                                     <p class="card-text">Gerencie exercícios, reabilitação e pacientes</p>
-                                    <a href="index.php?page=admin/pacientes" class="btn btn-primary">Acessar</a>
+                                    <a href="index.php?page=admin/pacientes" class="btn btn-warning">Acessar</a>
                                 </div>
                             </div>
                         </div>
@@ -300,7 +300,7 @@ $pdo = getConnection();
                                     <i class="bi bi-collection-play icon-large"></i>
                                     <h5 class="card-title">Mídias</h5>
                                     <p class="card-text">Gerencie vídeos e arquivos do sistema</p>
-                                    <a href="index.php?page=admin/videos" class="btn btn-primary">Acessar</a>
+                                    <a href="index.php?page=admin/videos" class="btn btn-warning">Acessar</a>
                                 </div>
                             </div>
                         </div>
@@ -312,7 +312,7 @@ $pdo = getConnection();
                                     <i class="bi bi-gear icon-large"></i>
                                     <h5 class="card-title">Configurações</h5>
                                     <p class="card-text">Gerencie usuários e configurações do sistema</p>
-                                    <a href="index.php?page=admin/usuarios" class="btn btn-primary">Acessar</a>
+                                    <a href="index.php?page=admin/usuarios" class="btn btn-warning">Acessar</a>
                                 </div>
                             </div>
                         </div>
