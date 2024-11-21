@@ -87,6 +87,15 @@ $problemas = [
             <form id="formCadastro" method="POST" action="pages/cadastro_process.php">
                 <div class="row g-3">
                     <div class="col-md-12">
+                        <label class="form-label required">Tipo de Usuário</label>
+                        <select class="form-select" name="tipo_usuario" id="tipo_usuario" required>
+                            <option value="">Selecione o tipo de usuário</option>
+                            <option value="medico">Médico</option>
+                            <option value="paciente">Paciente</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12">
                         <label class="form-label required">Nome Completo</label>
                         <input type="text" class="form-control" name="nome" required>
                     </div>
@@ -101,46 +110,60 @@ $problemas = [
                         <input type="email" class="form-control" name="email" required>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label required">Data da Cirurgia</label>
-                        <input type="date" class="form-control" name="data_cirurgia" required>
+                    <!-- Campos específicos para médico -->
+                    <div class="col-md-6 medico-fields" style="display: none;">
+                        <label class="form-label required">CRM</label>
+                        <input type="text" class="form-control" name="crm">
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label required">Médico</label>
-                        <select class="form-select" name="medico" required>
-                            <option value="">Selecione o médico</option>
-                            <?php foreach ($medicos as $medico): ?>
-                            <option value="<?php echo htmlspecialchars($medico); ?>">
-                                <?php echo htmlspecialchars($medico); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="col-md-6 medico-fields" style="display: none;">
+                        <label class="form-label required">Especialidade</label>
+                        <input type="text" class="form-control" name="especialidade" value="Ortopedia">
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label required">Fisioterapeuta</label>
-                        <select class="form-select" name="fisioterapeuta" required>
-                            <option value="">Selecione o fisioterapeuta</option>
-                            <?php foreach ($fisioterapeutas as $fisio): ?>
-                            <option value="<?php echo htmlspecialchars($fisio); ?>">
-                                <?php echo htmlspecialchars($fisio); ?>
-                            </option>
-                            <?php endforeach; ?>
-                            <option value="Dra. Juliana">Dra. Juliana</option>
-                        </select>
-                    </div>
+                    <!-- Campos específicos para paciente -->
+                    <div class="paciente-fields">
+                        <div class="col-md-6">
+                            <label class="form-label required">Data da Cirurgia</label>
+                            <input type="date" class="form-control" name="data_cirurgia">
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label required">Problema</label>
-                        <select class="form-select" name="problema" required>
-                            <option value="">Selecione o problema</option>
-                            <?php foreach ($problemas as $problema): ?>
-                            <option value="<?php echo htmlspecialchars($problema); ?>">
-                                <?php echo htmlspecialchars($problema); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <div class="col-md-6">
+                            <label class="form-label required">Médico</label>
+                            <select class="form-select" name="medico">
+                                <option value="">Selecione o médico</option>
+                                <?php foreach ($medicos as $medico): ?>
+                                <option value="<?php echo htmlspecialchars($medico); ?>">
+                                    <?php echo htmlspecialchars($medico); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label required">Fisioterapeuta</label>
+                            <select class="form-select" name="fisioterapeuta">
+                                <option value="">Selecione o fisioterapeuta</option>
+                                <?php foreach ($fisioterapeutas as $fisio): ?>
+                                <option value="<?php echo htmlspecialchars($fisio); ?>">
+                                    <?php echo htmlspecialchars($fisio); ?>
+                                </option>
+                                <?php endforeach; ?>
+                                <option value="Dra. Juliana">Dra. Juliana</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label required">Problema</label>
+                            <select class="form-select" name="problema">
+                                <option value="">Selecione o problema</option>
+                                <?php foreach ($problemas as $problema): ?>
+                                <option value="<?php echo htmlspecialchars($problema); ?>">
+                                    <?php echo htmlspecialchars($problema); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
@@ -228,6 +251,26 @@ $problemas = [
                     alert('Você precisa aceitar os Termos de Uso!');
                     return false;
                 }
+            });
+        });
+
+        document.getElementById('tipo_usuario').addEventListener('change', function() {
+            const medicoFields = document.querySelectorAll('.medico-fields');
+            const pacienteFields = document.querySelectorAll('.paciente-fields');
+            const isMedico = this.value === 'medico';
+
+            medicoFields.forEach(field => {
+                field.style.display = isMedico ? 'block' : 'none';
+                field.querySelectorAll('input').forEach(input => {
+                    input.required = isMedico;
+                });
+            });
+
+            pacienteFields.forEach(field => {
+                field.style.display = isMedico ? 'none' : 'block';
+                field.querySelectorAll('input, select').forEach(input => {
+                    input.required = !isMedico;
+                });
             });
         });
     </script>

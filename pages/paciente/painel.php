@@ -90,13 +90,27 @@ $exames = $stmt->fetch();
         .card-dashboard {
             transition: transform 0.2s;
             cursor: pointer;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .card-dashboard:hover {
             transform: translateY(-5px);
         }
         .icon-large {
-            font-size: 2rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
+            color: #0d6efd;
+        }
+        .bg-primary {
+            background-color: #0d6efd !important;
+        }
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-text {
+            color: #6c757d;
         }
     </style>
 </head>
@@ -108,20 +122,18 @@ $exames = $stmt->fetch();
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php?page=paciente/painel">Painel</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
+                            <i class="bi bi-person-circle"></i> Perfil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i> Sair
+                        </a>
                     </li>
                 </ul>
-                <div class="d-flex align-items-center">
-                    <span class="me-3 text-white">
-                        <i class="bi bi-person"></i> 
-                        Olá, <?php echo htmlspecialchars($_SESSION['user_nome']); ?>
-                    </span>
-                    <a class="btn btn-light btn-sm" href="index.php?page=login_process&logout=1">
-                        <i class="bi bi-box-arrow-right"></i> Sair
-                    </a>
-                </div>
             </div>
         </div>
     </nav>
@@ -129,8 +141,8 @@ $exames = $stmt->fetch();
     <div class="container my-4">
         <div class="row mb-4">
             <div class="col">
-                <h2>Meu Painel</h2>
-                <p class="text-muted">Bem-vindo ao seu painel de controle</p>
+                <h2>Painel do Paciente</h2>
+                <p class="text-muted">Bem-vindo(a), <?php echo htmlspecialchars($paciente['nome']); ?></p>
             </div>
         </div>
 
@@ -139,21 +151,9 @@ $exames = $stmt->fetch();
             <div class="col-md-4">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/exercicios'">
                     <div class="card-body text-center">
-                        <i class="bi bi-activity icon-large text-primary"></i>
+                        <i class="bi bi-activity icon-large"></i>
                         <h5 class="card-title">Exercícios</h5>
-                        <p class="card-text">Visualize e acompanhe seus exercícios prescritos</p>
-                        <span class="badge bg-primary"><?php echo $exercicios['total_exercicios']; ?> exercícios</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cirurgias -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/cirurgias'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-bandaid icon-large text-danger"></i>
-                        <h5 class="card-title">Cirurgias</h5>
-                        <p class="card-text">Informações sobre suas cirurgias</p>
+                        <p class="card-text">Acompanhe seus exercícios</p>
                     </div>
                 </div>
             </div>
@@ -162,75 +162,20 @@ $exames = $stmt->fetch();
             <div class="col-md-4">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/perguntas'">
                     <div class="card-body text-center">
-                        <i class="bi bi-chat-dots icon-large text-info"></i>
+                        <i class="bi bi-question-circle icon-large"></i>
                         <h5 class="card-title">Perguntas</h5>
-                        <p class="card-text">Tire suas dúvidas com a equipe médica</p>
+                        <p class="card-text">Faça perguntas ao seu médico</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Exames -->
+            <!-- Semanas -->
             <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/exames'">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/semanas'">
                     <div class="card-body text-center">
-                        <i class="bi bi-file-earmark-text icon-large text-warning"></i>
-                        <h5 class="card-title">Exames</h5>
-                        <p class="card-text">Acesse seus exames e resultados</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Depoimentos -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/depoimentos'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-chat-quote icon-large text-secondary"></i>
-                        <h5 class="card-title">Depoimentos</h5>
-                        <p class="card-text">Compartilhe sua experiência</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Documentos -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/documentos'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-folder icon-large text-success"></i>
-                        <h5 class="card-title">Documentos</h5>
-                        <p class="card-text">Acesse seus documentos médicos</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vídeos -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/videos'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-play-circle icon-large text-danger"></i>
-                        <h5 class="card-title">Vídeos</h5>
-                        <p class="card-text">Assista vídeos educativos</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fisioterapeuta -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/fisioterapeuta'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-person icon-large text-primary"></i>
-                        <h5 class="card-title">Fisioterapeuta</h5>
-                        <p class="card-text">Informações do seu fisioterapeuta</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Médicos -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/medicos'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-people icon-large text-success"></i>
-                        <h5 class="card-title">Médicos</h5>
-                        <p class="card-text">Informações da sua equipe médica</p>
+                        <i class="bi bi-calendar-week icon-large"></i>
+                        <h5 class="card-title">Semanas</h5>
+                        <p class="card-text">Acompanhe sua evolução semanal</p>
                     </div>
                 </div>
             </div>

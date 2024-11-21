@@ -184,22 +184,27 @@ try {
         .card-dashboard {
             transition: transform 0.2s;
             cursor: pointer;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .card-dashboard:hover {
             transform: translateY(-5px);
         }
         .icon-large {
-            font-size: 2rem;
+            font-size: 2.5rem;
             margin-bottom: 1rem;
+            color: #0d6efd;
         }
-        .consulta-item {
-            border-left: 4px solid #0d6efd;
+        .bg-primary {
+            background-color: #0d6efd !important;
+        }
+        .card-title {
+            font-weight: 600;
             margin-bottom: 0.5rem;
-            padding: 0.5rem;
-            background-color: #f8f9fa;
         }
-        .consulta-item:hover {
-            background-color: #e9ecef;
+        .card-text {
+            color: #6c757d;
         }
     </style>
 </head>
@@ -211,28 +216,18 @@ try {
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php?page=medico/painel">Painel</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
+                            <i class="bi bi-person-circle"></i> Perfil
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=medico/perguntas">
-                            <i class="bi bi-chat-dots"></i> Perguntas
-                            <?php if ($total_perguntas > 0): ?>
-                                <span class="badge bg-danger"><?php echo $total_perguntas; ?></span>
-                            <?php endif; ?>
+                        <a class="nav-link" href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i> Sair
                         </a>
                     </li>
                 </ul>
-                <div class="d-flex align-items-center">
-                    <span class="me-3 text-white">
-                        <i class="bi bi-person"></i> 
-                        Olá, <?php echo htmlspecialchars($_SESSION['user_nome']); ?>
-                    </span>
-                    <a class="btn btn-light btn-sm" href="index.php?page=login_process&logout=1">
-                        <i class="bi bi-box-arrow-right"></i> Sair
-                    </a>
-                </div>
             </div>
         </div>
     </nav>
@@ -240,136 +235,89 @@ try {
     <div class="container my-4">
         <div class="row mb-4">
             <div class="col">
-                <h2>Meu Painel</h2>
-                <p class="text-muted">Bem-vindo ao seu painel de controle</p>
+                <h2>Painel do Médico</h2>
+                <p class="text-muted">Bem-vindo, Dr(a). <?php echo htmlspecialchars($medico['nome']); ?></p>
             </div>
         </div>
 
-        <div class="row">
-            <!-- Cards de Estatísticas -->
-            <div class="col-md-3 mb-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/pacientes'">
+        <div class="row g-4">
+            <!-- Reabilitação -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/reabilitacao'">
                     <div class="card-body text-center">
-                        <i class="bi bi-people icon-large text-primary"></i>
-                        <h5 class="card-title">Pacientes</h5>
-                        <p class="card-text">Gerencie seus pacientes</p>
-                        <span class="badge bg-primary"><?php echo $total_pacientes; ?> pacientes ativos</span>
+                        <i class="bi bi-heart-pulse icon-large"></i>
+                        <h5 class="card-title">Reabilitação</h5>
+                        <p class="card-text">Gerencie protocolos de reabilitação</p>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-3 mb-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/consultas'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-calendar2-week icon-large text-success"></i>
-                        <h5 class="card-title">Consultas</h5>
-                        <p class="card-text">Gerencie sua agenda</p>
-                        <span class="badge bg-success"><?php echo $total_consultas; ?> consultas agendadas</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/cirurgias'">
-                    <div class="card-body text-center">                    
-                    <i class="bi bi-bandaid icon-large text-danger"></i>
-                        <h5 class="card-title">Cirurgias</h5>
-                        <p class="card-text">Acompanhe cirurgias</p>
-                        <span class="badge bg-danger"><?php echo $total_cirurgias; ?> cirurgias agendadas</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/exames'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-file-medical icon-large text-info"></i>
-                        <h5 class="card-title">Exames</h5>
-                        <p class="card-text">Gerencie exames</p>
-                        <span class="badge bg-info"><?php echo $total_exames; ?> exames pendentes</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
+            <!-- Exercícios -->
+            <div class="col-md-4 col-lg-3">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/exercicios'">
                     <div class="card-body text-center">
-                        <i class="bi bi-clock-fill icon-large text-warning"></i>                        
+                        <i class="bi bi-activity icon-large"></i>
                         <h5 class="card-title">Exercícios</h5>
-                        <p class="card-text">Prescreva exercícios</p>
-                        <span class="badge bg-warning"><?php echo $total_exercicios; ?> prescrições ativas</span>
+                        <p class="card-text">Gerenciar exercícios</p>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-3 mb-4">
+            <!-- Perguntas -->
+            <div class="col-md-4 col-lg-3">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/perguntas'">
                     <div class="card-body text-center">
-                        <i class="bi bi-chat-dots icon-large text-info"></i>
+                        <i class="bi bi-question-circle icon-large"></i>
                         <h5 class="card-title">Perguntas</h5>
-                        <p class="card-text">Responda dúvidas</p>
-                        <?php if ($total_perguntas > 0): ?>
-                            <span class="badge bg-danger"><?php echo $total_perguntas; ?> não respondidas</span>
-                        <?php else: ?>
-                            <span class="badge bg-success">Nenhuma pendente</span>
-                        <?php endif; ?>
+                        <p class="card-text">Responder perguntas dos pacientes</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Próximas Consultas -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-calendar2-check"></i> 
-                            Próximas Consultas do Dia
-                        </h5>
+            <!-- Pacientes -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/pacientes'">
+                    <div class="card-body text-center">
+                        <i class="bi bi-people icon-large"></i>
+                        <h5 class="card-title">Pacientes</h5>
+                        <p class="card-text">Gerenciar pacientes</p>
                     </div>
-                    <div class="card-body">
-                        <?php if (empty($proximas_consultas)): ?>
-                            <p class="text-muted text-center mb-0">Nenhuma consulta agendada para hoje</p>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Horário</th>
-                                            <th>Paciente</th>
-                                            <th>Tipo</th>
-                                            <th>Status</th>
-                                            <th>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($proximas_consultas as $consulta): ?>
-                                            <tr>
-                                                <td><?php echo date('H:i', strtotime($consulta['data_consulta'])); ?></td>
-                                                <td><?php echo htmlspecialchars($consulta['nome_paciente']); ?></td>
-                                                <td><?php echo ucfirst(str_replace('_', ' ', $consulta['tipo_consulta'])); ?></td>
-                                                <td>
-                                                    <span class="badge bg-<?php echo $consulta['status'] === 'agendada' ? 'warning' : 'success'; ?>">
-                                                        <?php echo ucfirst($consulta['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-sm btn-primary" onclick="verDetalhesConsulta(<?php echo $consulta['id']; ?>)">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Vídeos -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/videos'">
+                    <div class="card-body text-center">
+                        <i class="bi bi-camera-video icon-large"></i>
+                        <h5 class="card-title">Vídeos</h5>
+                        <p class="card-text">Gerenciar vídeos educativos</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arquivos -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/arquivos'">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text icon-large"></i>
+                        <h5 class="card-title">Arquivos</h5>
+                        <p class="card-text">Gerenciar documentos</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tratamentos -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/tratamentos'">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clipboard2-pulse icon-large"></i>
+                        <h5 class="card-title">Tratamentos</h5>
+                        <p class="card-text">Gerenciar tratamentos</p>
                     </div>
                 </div>
             </div>
         </div>
-        
     </div>
 
     <!-- Modal Perfil -->
@@ -413,30 +361,5 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function responderPergunta(id) {
-            window.location.href = `index.php?page=medico/perguntas#pergunta-${id}`;
-        }
-
-        // Atualiza o badge de perguntas a cada 5 minutos
-        setInterval(function() {
-            fetch('index.php?page=medico/get_perguntas_pendentes')
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.querySelector('#perguntas-badge');
-                    if (badge) {
-                        if (data.total > 0) {
-                            badge.textContent = data.total;
-                            badge.classList.remove('bg-success');
-                            badge.classList.add('bg-danger');
-                        } else {
-                            badge.textContent = 'Nenhuma';
-                            badge.classList.remove('bg-danger');
-                            badge.classList.add('bg-success');
-                        }
-                    }
-                });
-        }, 300000); // 5 minutos
-    </script>
 </body>
 </html>
