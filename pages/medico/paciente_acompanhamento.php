@@ -90,47 +90,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acompanhamento do Paciente - Central do Joelho</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        .icon-large {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #0d6efd;
+        }
+        .card-dashboard {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .card-dashboard:hover {
+            transform: translateY(-5px);
+        }
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-text {
+            color: #6c757d;
+        }
         .timeline {
             position: relative;
-            padding: 20px 0;
+            padding-left: 3rem;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #dee2e6;
         }
         .timeline-item {
             position: relative;
-            padding-left: 40px;
-            margin-bottom: 20px;
+            padding-bottom: 1.5rem;
         }
         .timeline-item::before {
-            content: "";
+            content: '';
             position: absolute;
-            left: 0;
-            top: 0;
-            bottom: -20px;
-            width: 2px;
-            background-color: #0d6efd;
-        }
-        .timeline-item::after {
-            content: "";
-            position: absolute;
-            left: -4px;
-            top: 8px;
-            width: 10px;
-            height: 10px;
+            left: -2.35rem;
+            top: 0.25rem;
+            width: 1rem;
+            height: 1rem;
             border-radius: 50%;
-            background-color: #0d6efd;
-        }
-        .timeline-item:last-child::before {
-            bottom: 0;
-        }
-        .status-badge {
-            width: 100px;
-            text-align: center;
+            background: #0d6efd;
+            border: 2px solid #fff;
         }
     </style>
 </head>
 <body class="bg-light">
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="index.php?page=medico/painel">Central do Joelho</a>
@@ -138,10 +149,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=medico/pacientes">
-                            <i class="bi bi-arrow-left-circle"></i> Voltar para Lista de Pacientes
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
+                            <i class="bi bi-person-circle"></i> Perfil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i> Sair
                         </a>
                     </li>
                 </ul>
@@ -149,131 +165,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         </div>
     </nav>
 
-    <div class="container my-4">
-        <?php if (isset($_GET['sucesso'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($_GET['sucesso']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=medico/painel" class="text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> Voltar ao Painel
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=medico/pacientes" class="text-decoration-none">
+                                Pacientes
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            Acompanhamento - <?php echo htmlspecialchars($paciente['nome']); ?>
+                        </li>
+                    </ol>
+                </nav>
+                <h2>Acompanhamento do Paciente</h2>
+                <p class="text-muted">Gerencie o progresso e evolução do paciente</p>
+            </div>
         </div>
+
+        <?php if (isset($_GET['sucesso'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($_GET['sucesso']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         <?php endif; ?>
 
         <?php if (isset($erro)): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($erro); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($erro); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         <?php endif; ?>
 
-        <!-- Informações do Paciente -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <h4 class="card-title">
-                            <i class="bi bi-person-circle"></i> 
-                            <?php echo htmlspecialchars($paciente['nome']); ?>
-                        </h4>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-envelope"></i> 
-                            <?php echo htmlspecialchars($paciente['email']); ?>
-                        </p>
-                    </div>
-                    <div class="col-md-4 text-md-end">
-                        <?php
-                        $statusClass = [
-                            'pendente' => 'warning',
-                            'ativo' => 'success',
-                            'inativo' => 'danger'
-                        ][$paciente['usuario_status']] ?? 'secondary';
-                        ?>
-                        <span class="badge bg-<?php echo $statusClass; ?> status-badge">
-                            <?php echo htmlspecialchars($paciente['usuario_status']); ?>
-                        </span>
+        <div class="row g-4">
+            <!-- Informações do Paciente -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-person-badge"></i> Informações do Paciente
+                        </h5>
+                        <hr>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Nome:</dt>
+                            <dd class="col-sm-8"><?php echo htmlspecialchars($paciente['nome']); ?></dd>
+                            
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8"><?php echo htmlspecialchars($paciente['email']); ?></dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-<?php echo $paciente['usuario_status'] === 'ativo' ? 'success' : 'warning'; ?>">
+                                    <?php echo ucfirst($paciente['usuario_status']); ?>
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Cirurgia:</dt>
+                            <dd class="col-sm-8">
+                                <?php echo $paciente['data_cirurgia'] ? date('d/m/Y', strtotime($paciente['data_cirurgia'])) : 'Não agendada'; ?>
+                            </dd>
+                        </dl>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Detalhes do Tratamento -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card h-100">
+            <!-- Histórico de Evolução -->
+            <div class="col-md-8">
+                <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-clipboard-pulse"></i> 
-                            Detalhes do Tratamento
-                        </h5>
-                        <ul class="list-unstyled">
-                            <li class="mb-2">
-                                <strong>Problema:</strong><br>
-                                <?php echo htmlspecialchars($paciente['problema']); ?>
-                            </li>
-                            <li class="mb-2">
-                                <strong>Data da Cirurgia:</strong><br>
-                                <?php echo $paciente['data_cirurgia'] ? date('d/m/Y', strtotime($paciente['data_cirurgia'])) : 'Não definida'; ?>
-                            </li>
-                            <li>
-                                <strong>Início do Tratamento:</strong><br>
-                                <?php echo date('d/m/Y', strtotime($paciente['data_cadastro'])); ?>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-journal-plus"></i> 
-                            Nova Evolução
-                        </h5>
-                        <form method="POST">
-                            <input type="hidden" name="action" value="nova_evolucao">
-                            <div class="mb-3">
-                                <label for="descricao" class="form-label">Descrição</label>
-                                <textarea class="form-control" id="descricao" name="descricao" rows="4" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> 
-                                Registrar Evolução
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clock-history"></i> Histórico de Evolução
+                            </h5>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEvolucao">
+                                <i class="bi bi-plus-lg"></i> Nova Evolução
                             </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Linha do Tempo de Evolução -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <i class="bi bi-clock-history"></i> 
-                    Histórico de Evolução
-                </h5>
-                
-                <?php if (empty($evolucoes)): ?>
-                <p class="text-muted text-center py-4">
-                    <i class="bi bi-info-circle"></i>
-                    Nenhuma evolução registrada ainda
-                </p>
-                <?php else: ?>
-                <div class="timeline">
-                    <?php foreach ($evolucoes as $evolucao): ?>
-                    <div class="timeline-item">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-subtitle mb-2 text-muted">
-                                    <?php echo date('d/m/Y H:i', strtotime($evolucao['data_registro'])); ?>
-                                </h6>
-                                <p class="card-text">
-                                    <?php echo nl2br(htmlspecialchars($evolucao['descricao'])); ?>
-                                </p>
+                        </div>
+                        
+                        <div class="timeline">
+                            <?php if (empty($evolucoes)): ?>
+                            <p class="text-muted text-center py-4">
+                                <i class="bi bi-info-circle"></i>
+                                Nenhuma evolução registrada ainda
+                            </p>
+                            <?php else: ?>
+                            <?php foreach ($evolucoes as $evolucao): ?>
+                            <div class="timeline-item">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">
+                                            <?php echo date('d/m/Y H:i', strtotime($evolucao['data_registro'])); ?>
+                                        </h6>
+                                        <p class="card-text">
+                                            <?php echo nl2br(htmlspecialchars($evolucao['descricao'])); ?>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>

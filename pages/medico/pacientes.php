@@ -94,26 +94,30 @@ $pacientes = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Pacientes - Central do Joelho</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .status-badge {
-            min-width: 80px;
-        }
-        .table-actions {
-            width: 200px;
-        }
-        .alert-medico {
-            background-color: #fff3cd;
-            border-color: #ffecb5;
-            color: #664d03;
-            padding: 1rem;
+        .icon-large {
+            font-size: 2rem;
             margin-bottom: 1rem;
-            border-radius: 0.375rem;
+            color: #0d6efd;
+        }
+        .card-dashboard {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .card-dashboard:hover {
+            transform: translateY(-5px);
+        }
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-text {
+            color: #6c757d;
         }
     </style>
 </head>
 <body class="bg-light">
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="index.php?page=medico/painel">Central do Joelho</a>
@@ -121,35 +125,42 @@ $pacientes = $stmt->fetchAll();
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php?page=medico/pacientes">
-                            <i class="bi bi-people"></i> Pacientes
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
+                            <i class="bi bi-person-circle"></i> Perfil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="logout.php">
+                            <i class="bi bi-box-arrow-right"></i> Sair
                         </a>
                     </li>
                 </ul>
-                <div class="d-flex">
-                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#perfilModal">
-                        <i class="bi bi-person-circle"></i> Perfil
-                    </button>
-                    <a href="logout.php" class="btn btn-outline-light ms-2">
-                        <i class="bi bi-box-arrow-right"></i> Sair
-                    </a>
-                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container my-4">
+    <div class="container mt-4">
         <div class="row mb-4">
             <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=medico/painel" class="text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> Voltar ao Painel
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Gerenciar Pacientes</li>
+                    </ol>
+                </nav>
                 <h2>Gerenciar Pacientes</h2>
                 <p class="text-muted">Gerencie seus pacientes e autorize novos acessos</p>
             </div>
         </div>
 
         <?php if (!$medico_liberado): ?>
-        <div class="alert-medico" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <h4 class="alert-heading">
                 <i class="bi bi-exclamation-triangle"></i> Acesso Limitado
             </h4>
@@ -160,23 +171,23 @@ $pacientes = $stmt->fetchAll();
         <?php endif; ?>
 
         <?php if (isset($_GET['sucesso'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($_GET['sucesso']); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($_GET['sucesso']); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         <?php endif; ?>
 
         <?php if (isset($erro)): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($erro); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?php echo htmlspecialchars($erro); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         <?php endif; ?>
 
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
                                 <th>Nome</th>

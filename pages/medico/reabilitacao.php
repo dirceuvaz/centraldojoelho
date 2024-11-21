@@ -81,6 +81,16 @@ $medico = $stmt->fetch(PDO::FETCH_ASSOC);
     <div class="container mt-4">
         <div class="row mb-4">
             <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="index.php?page=medico/painel" class="text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> Voltar ao Painel
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">Gerenciamento de Reabilitação</li>
+                    </ol>
+                </nav>
                 <h2>Gerenciamento de Reabilitação</h2>
                 <p class="text-muted">Gerencie as orientações e protocolos de reabilitação</p>
             </div>

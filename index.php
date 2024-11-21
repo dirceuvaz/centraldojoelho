@@ -29,5 +29,5 @@ $file = __DIR__ . '/pages/' . $page . '.php';
 if (file_exists($file)) {
     require $file;
 } else {
-    echo "Página não encontrada";
+    require __DIR__ . '/pages/errors/404.php';
 }

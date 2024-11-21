@@ -245,7 +245,7 @@ try {
             <div class="col-md-4 col-lg-3">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/reabilitacao'">
                     <div class="card-body text-center">
-                        <i class="bi bi-heart-pulse icon-large"></i>
+                    <i class="bi bi-check-square icon-large"></i>                                              
                         <h5 class="card-title">Reabilitação</h5>
                         <p class="card-text">Gerencie protocolos de reabilitação</p>
                     </div>
@@ -311,7 +311,7 @@ try {
             <div class="col-md-4 col-lg-3">
                 <div class="card card-dashboard h-100" onclick="window.location='index.php?page=medico/tratamentos'">
                     <div class="card-body text-center">
-                        <i class="bi bi-clipboard2-pulse icon-large"></i>
+                    <i class="bi bi-journal-medical icon-large"></i>                                       
                         <h5 class="card-title">Tratamentos</h5>
                         <p class="card-text">Gerenciar tratamentos</p>
                     </div>
