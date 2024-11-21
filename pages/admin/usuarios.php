@@ -47,21 +47,32 @@ $usuarios = $stmt->fetchAll();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
+        :root {
+            --primary-color: #231F5D;
+        }
         .sidebar {
             min-height: 100vh;
-            background-color: #f8f9fa;
-            border-right: 1px solid #dee2e6;
+            background-color: var(--primary-color);
             padding: 20px 0;
         }
         .sidebar .nav-link {
-            color: #333;
+            color: rgba(255, 255, 255, 0.85);
             padding: 10px 20px;
+            transition: all 0.3s ease;
         }
         .sidebar .nav-link:hover {
-            background-color: #e9ecef;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding-left: 25px;
         }
         .sidebar .nav-link.active {
-            background-color: #0d6efd;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .sidebar .text-muted {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        .sidebar h5 {
             color: white;
         }
         .main-content {
@@ -267,6 +278,16 @@ $usuarios = $stmt->fetchAll();
                                                     <input type="hidden" name="acao" value="bloquear">
                                                     <button type="submit" class="btn btn-danger btn-sm">
                                                         <i class="bi bi-lock-fill"></i> Bloquear
+                                                    </button>
+                                                </form>
+                                                <?php endif; ?>
+
+                                                <?php if ($usuario['status'] === 'inativo'): ?>
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="id_usuario" value="<?php echo $usuario['id']; ?>">
+                                                    <input type="hidden" name="acao" value="aprovar">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-unlock-fill"></i> Desbloquear
                                                     </button>
                                                 </form>
                                                 <?php endif; ?>

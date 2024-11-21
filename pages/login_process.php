@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Cria a sessão
             $_SESSION['user_id'] = $usuario['id'];
             $_SESSION['user_nome'] = $usuario['nome'];
+            $_SESSION['user_email'] = $usuario['email'];
             $_SESSION['tipo_usuario'] = $usuario['tipo_usuario'];
             
             // Se marcou "Lembrar-me", salva o email em um cookie por 30 dias

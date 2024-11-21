@@ -92,14 +92,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #231F5D;
+        }
+        .navbar {
+            background-color: var(--primary-color) !important;
+        }
         .icon-large {
             font-size: 2rem;
             margin-bottom: 1rem;
-            color: #0d6efd;
+            color: var(--primary-color);
         }
         .card-dashboard {
             transition: transform 0.2s;
             cursor: pointer;
+            border: none;
         }
         .card-dashboard:hover {
             transform: translateY(-5px);
@@ -136,8 +143,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             width: 1rem;
             height: 1rem;
             border-radius: 50%;
-            background: #0d6efd;
+            background: var(--primary-color);
             border: 2px solid #fff;
+        }
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -277,7 +291,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </div>
         </div>
     </div>
-
+        <!-- Modal Evolução -->
+        <div class="modal fade" id="modalEvolucao" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="nova_evolucao">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Nova Evolução</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="descricao" class="form-label">Descrição da Evolução</label>
+                                <textarea class="form-control" id="descricao" name="descricao" rows="5" required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Registrar Evolução
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Perfil -->
+        <div class="modal fade" id="perfilModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="index.php?page=medico/perfil_process" method="POST">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Meu Perfil</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" name="nome" value="<?php echo htmlspecialchars($medico['nome']); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($medico['email']); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CRM</label>
+                                <input type="text" class="form-control" name="crm" value="<?php echo htmlspecialchars($medico['crm']); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Especialidade</label>
+                                <input type="text" class="form-control" name="especialidade" value="<?php echo htmlspecialchars($medico['especialidade']); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nova Senha</label>
+                                <input type="password" class="form-control" name="senha" placeholder="Deixe em branco para manter a atual">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
