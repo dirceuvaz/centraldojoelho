@@ -11,10 +11,13 @@ $pdo = getConnection();
 
 // Buscar todas as orientações de reabilitação do médico
 $stmt = $pdo->prepare("
-    SELECT * FROM reabilitacao 
-    WHERE id_medico = ? 
-    ORDER BY data_criacao DESC
+    SELECT r.*, c.data_cirurgia 
+    FROM reabilitacao r
+    LEFT JOIN cirurgias c ON r.momento = c.id
+    WHERE r.id_medico = ? 
+    ORDER BY r.data_criacao DESC
 ");
+
 $stmt->execute([$_SESSION['user_id']]);
 $orientacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -125,41 +128,38 @@ $medico = $stmt->fetch(PDO::FETCH_ASSOC);
                         <thead>
                             <tr>
                                 <th>Título</th>
-                                <th>Data de Criação</th>
-                                <th>Última Atualização</th>
+                                <th>Momento</th>
+                                <th>Tipo</th>
+                                <th>Criado em</th>
+                                <th>Atualizado em</th>
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($orientacoes)): ?>
                                 <tr>
-                                    <td colspan="4" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                            Nenhuma orientação cadastrada
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="icon-large">
+                                            <i class="bi bi-inbox"></i>
                                         </div>
+                                        <p class="text-muted">Nenhuma orientação cadastrada</p>
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($orientacoes as $orientacao): ?>
                                     <tr>
-                                        <td>
-                                            <div class="fw-semibold"><?php echo htmlspecialchars($orientacao['titulo']); ?></div>
-                                            <div class="text-muted small text-truncate" style="max-width: 300px;">
-                                                <?php echo htmlspecialchars(strip_tags($orientacao['texto'])); ?>
-                                            </div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <?php echo date('d/m/Y', strtotime($orientacao['data_criacao'])); ?>
-                                        </td>
-                                        <td class="align-middle">
-                                            <?php echo date('d/m/Y H:i', strtotime($orientacao['data_atualizacao'])); ?>
-                                        </td>
+                                        <td class="align-middle"><?php echo htmlspecialchars($orientacao['titulo']); ?></td>
+                                        <td class="align-middle"><?php echo $orientacao['data_cirurgia'] ? date('d/m/Y', strtotime($orientacao['data_cirurgia'])) : 'N/A'; ?></td>
+                                        <td class="align-middle"><?php echo htmlspecialchars($orientacao['tipo']); ?></td>
+                                        <td class="align-middle"><?php echo date('d/m/Y', strtotime($orientacao['data_criacao'])); ?></td>
+                                        <td class="align-middle"><?php echo date('d/m/Y H:i', strtotime($orientacao['data_atualizacao'])); ?></td>
                                         <td class="text-end align-middle">
                                             <button class="btn btn-sm btn-outline-primary editar-orientacao me-1" 
                                                     data-id="<?php echo $orientacao['id']; ?>"
                                                     data-titulo="<?php echo htmlspecialchars($orientacao['titulo']); ?>"
                                                     data-texto="<?php echo htmlspecialchars($orientacao['texto']); ?>"
+                                                    data-momento="<?php echo htmlspecialchars($orientacao['momento']); ?>"
+                                                    data-tipo="<?php echo htmlspecialchars($orientacao['tipo']); ?>"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#modalOrientacao">
                                                 <i class="bi bi-pencil"></i>
@@ -189,12 +189,35 @@ $medico = $stmt->fetch(PDO::FETCH_ASSOC);
                 </div>
                 <form id="formOrientacao" action="index.php?page=medico/reabilitacao_process" method="POST">
                     <div class="modal-body">
-                        <input type="hidden" name="id" id="orientacao_id">
+                        <input type="hidden" name="orientacao_id" id="orientacao_id">
                         <input type="hidden" name="action" id="form_action" value="criar">
                         
                         <div class="mb-3">
                             <label for="titulo" class="form-label">Título</label>
                             <input type="text" class="form-control" id="titulo" name="titulo" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="momento" class="form-label">Momento</label>
+                            <select class="form-select" id="momento" name="momento" required>
+                                <option value="">Selecione o momento</option>
+                                <?php
+                                // Buscar cirurgias do paciente
+                                $stmt = $pdo->prepare("SELECT id, data_cirurgia FROM cirurgias ORDER BY data_cirurgia DESC");
+                                $stmt->execute();
+                                $cirurgias = $stmt->fetchAll();
+
+                                foreach ($cirurgias as $cirurgia) {
+                                    $data_formatada = date('d/m/Y', strtotime($cirurgia['data_cirurgia']));
+                                    echo "<option value='{$cirurgia['id']}'>Cirurgia em {$data_formatada}</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tipo" class="form-label">Tipo</label>
+                            <input type="text" class="form-control" id="tipo" name="tipo" value="Joelho" readonly>
                         </div>
                         
                         <div class="mb-3">
@@ -253,39 +276,11 @@ $medico = $stmt->fetch(PDO::FETCH_ASSOC);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Função para confirmar exclusão
-        function confirmarExclusao(id) {
-            if (confirm('Tem certeza que deseja excluir esta orientação?')) {
-                window.location.href = `index.php?page=medico/reabilitacao_process&action=excluir&id=${id}`;
-            }
-        }
+        // Adicionar log para debug
+        console.log('Script iniciado');
 
-        // Configurar modal para edição
-        document.querySelectorAll('.editar-orientacao').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                const titulo = this.dataset.titulo;
-                const texto = this.dataset.texto;
-
-                document.getElementById('modalOrientacaoLabel').textContent = 'Editar Orientação de Reabilitação';
-                document.getElementById('orientacao_id').value = id;
-                document.getElementById('form_action').value = 'editar';
-                document.getElementById('titulo').value = titulo;
-                document.getElementById('texto').value = texto;
-            });
-        });
-
-        // Resetar formulário ao abrir modal para nova orientação
-        document.getElementById('modalOrientacao').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('formOrientacao').reset();
-            document.getElementById('modalOrientacaoLabel').textContent = 'Nova Orientação de Reabilitação';
-            document.getElementById('orientacao_id').value = '';
-            document.getElementById('form_action').value = 'criar';
-        });
-    </script>
-    <script>
         let editor;
-    
+
         // Inicializar CKEditor
         ClassicEditor
             .create(document.querySelector('#editor'), {
@@ -329,34 +324,65 @@ $medico = $stmt->fetch(PDO::FETCH_ASSOC);
                 placeholder: 'Digite a orientação aqui...'
             })
             .then(newEditor => {
+                console.log('CKEditor inicializado');
                 editor = newEditor;
             })
             .catch(error => {
-                console.error(error);
+                console.error('Erro ao inicializar CKEditor:', error);
             });
-    
+
+        // Função para confirmar exclusão
+        function confirmarExclusao(id) {
+            console.log('Confirmar exclusão chamado com id:', id);
+            if (confirm('Tem certeza que deseja excluir esta orientação?')) {
+                window.location.href = `index.php?page=medico/reabilitacao_process&action=excluir&orientacao_id=${id}`;
+            }
+        }
+
         // Configurar modal para edição
-        document.querySelectorAll('.editar-orientacao').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                const titulo = this.dataset.titulo;
-                const texto = this.dataset.texto;
-    
-                document.getElementById('modalOrientacaoLabel').textContent = 'Editar Orientação de Reabilitação';
-                document.getElementById('orientacao_id').value = id;
-                document.getElementById('form_action').value = 'editar';
-                document.getElementById('titulo').value = titulo;
-                editor.setData(texto);
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM carregado');
+            
+            document.querySelectorAll('.editar-orientacao').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    console.log('Botão editar clicado');
+                    const id = this.dataset.id;
+                    const titulo = this.dataset.titulo;
+                    const texto = this.dataset.texto;
+                    const momento = this.dataset.momento;
+                    const tipo = this.dataset.tipo;
+
+                    console.log('Dados do botão:', { id, titulo, texto, momento, tipo });
+
+                    document.getElementById('modalOrientacaoLabel').textContent = 'Editar Orientação de Reabilitação';
+                    document.getElementById('orientacao_id').value = id;
+                    document.getElementById('form_action').value = 'editar';
+                    document.getElementById('titulo').value = titulo;
+                    document.getElementById('momento').value = momento;
+                    document.getElementById('tipo').value = tipo;
+                    editor.setData(texto);
+                });
             });
-        });
-    
-        // Resetar formulário ao fechar modal
-        document.getElementById('modalOrientacao').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('formOrientacao').reset();
-            document.getElementById('modalOrientacaoLabel').textContent = 'Nova Orientação de Reabilitação';
-            document.getElementById('orientacao_id').value = '';
-            document.getElementById('form_action').value = 'criar';
-            editor.setData('');
+
+            // Configurar modal para nova orientação
+            const modalOrientacao = document.getElementById('modalOrientacao');
+            if (modalOrientacao) {
+                modalOrientacao.addEventListener('show.bs.modal', function (event) {
+                    console.log('Modal sendo mostrado');
+                    const button = event.relatedTarget;
+                    if (!button.classList.contains('editar-orientacao')) {
+                        console.log('Resetando formulário para nova orientação');
+                        document.getElementById('formOrientacao').reset();
+                        document.getElementById('modalOrientacaoLabel').textContent = 'Nova Orientação de Reabilitação';
+                        document.getElementById('orientacao_id').value = '';
+                        document.getElementById('form_action').value = 'criar';
+                        document.getElementById('tipo').value = 'Joelho';
+                        editor.setData('');
+                    }
+                });
+            } else {
+                console.error('Modal não encontrado');
+            }
         });
     </script>
 </body>

@@ -21,6 +21,14 @@ function validarDados($dados) {
     if (empty($dados['texto'])) {
         $erros[] = "O texto é obrigatório";
     }
+
+    if (empty($dados['momento'])) {
+        $erros[] = "O momento é obrigatório";
+    }
+
+    if (empty($dados['tipo'])) {
+        $erros[] = "O tipo é obrigatório";
+    }
     
     return $erros;
 }
@@ -33,20 +41,24 @@ try {
         case 'criar':
             $dados = [
                 'titulo' => $_POST['titulo'] ?? '',
-                'texto' => $_POST['texto'] ?? ''
+                'texto' => $_POST['texto'] ?? '',
+                'momento' => $_POST['momento'] ?? '',
+                'tipo' => $_POST['tipo'] ?? ''
             ];
             
             $erros = validarDados($dados);
             
             if (empty($erros)) {
                 $stmt = $pdo->prepare("
-                    INSERT INTO reabilitacao (titulo, texto, id_medico, data_criacao, data_atualizacao)
-                    VALUES (?, ?, ?, NOW(), NOW())
+                    INSERT INTO reabilitacao (titulo, texto, momento, tipo, id_medico, data_criacao, data_atualizacao)
+                    VALUES (?, ?, ?, ?, ?, NOW(), NOW())
                 ");
                 
                 $stmt->execute([
                     $dados['titulo'],
                     $dados['texto'],
+                    $dados['momento'],
+                    $dados['tipo'],
                     $_SESSION['user_id']
                 ]);
                 
@@ -56,10 +68,16 @@ try {
             break;
 
         case 'editar':
-            $id = $_POST['id'] ?? 0;
+            if (empty($_POST['orientacao_id'])) {
+                throw new Exception("ID da orientação não fornecido");
+            }
+
             $dados = [
+                'id' => $_POST['orientacao_id'],
                 'titulo' => $_POST['titulo'] ?? '',
-                'texto' => $_POST['texto'] ?? ''
+                'texto' => $_POST['texto'] ?? '',
+                'momento' => $_POST['momento'] ?? '',
+                'tipo' => $_POST['tipo'] ?? ''
             ];
             
             $erros = validarDados($dados);
@@ -67,14 +85,20 @@ try {
             if (empty($erros)) {
                 $stmt = $pdo->prepare("
                     UPDATE reabilitacao 
-                    SET titulo = ?, texto = ?, data_atualizacao = NOW()
+                    SET titulo = ?, 
+                        texto = ?,
+                        momento = ?,
+                        tipo = ?,
+                        data_atualizacao = NOW()
                     WHERE id = ? AND id_medico = ?
                 ");
                 
                 $stmt->execute([
                     $dados['titulo'],
                     $dados['texto'],
-                    $id,
+                    $dados['momento'],
+                    $dados['tipo'],
+                    $dados['id'],
                     $_SESSION['user_id']
                 ]);
                 
@@ -84,10 +108,12 @@ try {
             break;
 
         case 'excluir':
-            $id = $_GET['id'] ?? 0;
-            
+            if (empty($_GET['orientacao_id'])) {
+                throw new Exception("ID da orientação não fornecido");
+            }
+
             $stmt = $pdo->prepare("DELETE FROM reabilitacao WHERE id = ? AND id_medico = ?");
-            $stmt->execute([$id, $_SESSION['user_id']]);
+            $stmt->execute([$_GET['orientacao_id'], $_SESSION['user_id']]);
             
             header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação excluída com sucesso!');
             exit;
