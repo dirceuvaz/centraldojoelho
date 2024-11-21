@@ -54,22 +54,26 @@ try {
                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())
                 ");
                 
-                $stmt->execute([
+                if ($stmt->execute([
                     $dados['titulo'],
                     $dados['texto'],
                     $dados['momento'],
                     $dados['tipo'],
                     $_SESSION['user_id']
-                ]);
-                
-                header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação criada com sucesso!');
-                exit;
+                ])) {
+                    header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação criada com sucesso!');
+                } else {
+                    header('Location: index.php?page=medico/reabilitacao&erro=Erro ao criar orientação');
+                }
+            } else {
+                header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode(implode(", ", $erros)));
             }
-            break;
+            exit;
 
         case 'editar':
             if (empty($_POST['orientacao_id'])) {
-                throw new Exception("ID da orientação não fornecido");
+                header('Location: index.php?page=medico/reabilitacao&erro=ID da orientação não fornecido');
+                exit;
             }
 
             $dados = [
@@ -93,54 +97,68 @@ try {
                     WHERE id = ? AND id_medico = ?
                 ");
                 
-                $stmt->execute([
+                if ($stmt->execute([
                     $dados['titulo'],
                     $dados['texto'],
                     $dados['momento'],
                     $dados['tipo'],
                     $dados['id'],
                     $_SESSION['user_id']
-                ]);
-                
-                header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação atualizada com sucesso!');
-                exit;
+                ])) {
+                    header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação atualizada com sucesso!');
+                } else {
+                    header('Location: index.php?page=medico/reabilitacao&erro=Erro ao atualizar orientação');
+                }
+            } else {
+                header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode(implode(", ", $erros)));
             }
-            break;
+            exit;
 
         case 'excluir':
             if (empty($_GET['orientacao_id'])) {
-                throw new Exception("ID da orientação não fornecido");
+                header('Location: index.php?page=medico/reabilitacao&erro=ID da orientação não fornecido');
+                exit;
             }
 
             $stmt = $pdo->prepare("DELETE FROM reabilitacao WHERE id = ? AND id_medico = ?");
-            $stmt->execute([$_GET['orientacao_id'], $_SESSION['user_id']]);
-            
-            header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação excluída com sucesso!');
+            if ($stmt->execute([$_GET['orientacao_id'], $_SESSION['user_id']])) {
+                header('Location: index.php?page=medico/reabilitacao&sucesso=Orientação excluída com sucesso!');
+            } else {
+                header('Location: index.php?page=medico/reabilitacao&erro=Erro ao excluir orientação');
+            }
             exit;
-            break;
 
         case 'buscar':
-            $id = $_GET['id'] ?? 0;
-            
+            if (empty($_GET['id'])) {
+                header('Location: index.php?page=medico/reabilitacao&erro=ID da orientação não fornecido');
+                exit;
+            }
+
             $stmt = $pdo->prepare("
-                SELECT * FROM reabilitacao 
-                WHERE id = ? AND id_medico = ?
+                SELECT r.*, m.descricao as momento_desc, t.descricao as tipo_desc
+                FROM reabilitacao r
+                LEFT JOIN momentos_reabilitacao m ON r.momento = m.id
+                LEFT JOIN tipos_reabilitacao t ON r.tipo = t.id
+                WHERE r.id = ? AND r.id_medico = ?
             ");
-            $stmt->execute([$id, $_SESSION['user_id']]);
+            
+            $stmt->execute([$_GET['id'], $_SESSION['user_id']]);
             $orientacao = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($orientacao) {
-                header('Content-Type: application/json');
-                echo json_encode($orientacao);
+                // Preencher os dados no formulário e mostrar o modal
+                $_SESSION['temp_orientacao'] = $orientacao;
+                header('Location: index.php?page=medico/reabilitacao&editar=' . $orientacao['id']);
             } else {
-                http_response_code(404);
-                echo json_encode(['erro' => 'Orientação não encontrada']);
+                header('Location: index.php?page=medico/reabilitacao&erro=Orientação não encontrada');
             }
             exit;
-            break;
+
+        default:
+            header('Location: index.php?page=medico/reabilitacao&erro=Ação inválida');
+            exit;
     }
 } catch (Exception $e) {
-    $erro = "Erro ao processar a solicitação: " . $e->getMessage();
-    header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode($erro));
+    header('Location: index.php?page=medico/reabilitacao&erro=' . urlencode($e->getMessage()));
     exit;
 }
