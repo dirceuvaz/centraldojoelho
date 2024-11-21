@@ -18,14 +18,6 @@ function validarDados($dados) {
         $erros[] = "O título é obrigatório";
     }
     
-    if (empty($dados['momento'])) {
-        $erros[] = "O momento é obrigatório";
-    }
-    
-    if (empty($dados['tipo'])) {
-        $erros[] = "O tipo é obrigatório";
-    }
-    
     if (empty($dados['texto'])) {
         $erros[] = "O texto é obrigatório";
     }
@@ -41,8 +33,6 @@ try {
         case 'criar':
             $dados = [
                 'titulo' => $_POST['titulo'] ?? '',
-                'momento' => $_POST['momento'] ?? '',
-                'tipo' => $_POST['tipo'] ?? '',
                 'texto' => $_POST['texto'] ?? ''
             ];
             
@@ -50,14 +40,12 @@ try {
             
             if (empty($erros)) {
                 $stmt = $pdo->prepare("
-                    INSERT INTO reabilitacao (titulo, momento, tipo, texto, id_medico, data_criacao, data_atualizacao)
-                    VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+                    INSERT INTO reabilitacao (titulo, texto, id_medico, data_criacao, data_atualizacao)
+                    VALUES (?, ?, ?, NOW(), NOW())
                 ");
                 
                 $stmt->execute([
                     $dados['titulo'],
-                    $dados['momento'],
-                    $dados['tipo'],
                     $dados['texto'],
                     $_SESSION['user_id']
                 ]);
@@ -71,8 +59,6 @@ try {
             $id = $_POST['id'] ?? 0;
             $dados = [
                 'titulo' => $_POST['titulo'] ?? '',
-                'momento' => $_POST['momento'] ?? '',
-                'tipo' => $_POST['tipo'] ?? '',
                 'texto' => $_POST['texto'] ?? ''
             ];
             
@@ -81,14 +67,12 @@ try {
             if (empty($erros)) {
                 $stmt = $pdo->prepare("
                     UPDATE reabilitacao 
-                    SET titulo = ?, momento = ?, tipo = ?, texto = ?, data_atualizacao = NOW()
+                    SET titulo = ?, texto = ?, data_atualizacao = NOW()
                     WHERE id = ? AND id_medico = ?
                 ");
                 
                 $stmt->execute([
                     $dados['titulo'],
-                    $dados['momento'],
-                    $dados['tipo'],
                     $dados['texto'],
                     $id,
                     $_SESSION['user_id']
