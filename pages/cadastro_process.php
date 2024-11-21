@@ -55,7 +55,7 @@ try {
 
     try {
         // Status inicial baseado no tipo de usuário
-        $status = $tipo_usuario === 'medico' ? 'pendente' : 'ativo';
+        $status = 'pendente'; // Todos os usuários começam como pendentes
 
         // Inserir usuário
         $stmt = $pdo->prepare("
@@ -108,7 +108,7 @@ try {
                     id_usuario, data_cirurgia, medico, fisioterapeuta, 
                     problema, status, data_cadastro
                 )
-                VALUES (?, ?, ?, ?, ?, 'ativo', NOW())
+                VALUES (?, ?, ?, ?, ?, 'pendente', NOW())
             ");
             $stmt->execute([
                 $id_usuario,
@@ -124,11 +124,7 @@ try {
         $transaction_started = false;
 
         // Redirecionar com mensagem apropriada
-        if ($tipo_usuario === 'medico') {
-            header('Location: ../index.php?cadastro=pendente');
-        } else {
-            header('Location: ../index.php?cadastro=sucesso');
-        }
+        header('Location: ../index.php?cadastro=pendente&tipo=' . $tipo_usuario);
         exit;
 
     } catch (Exception $e) {

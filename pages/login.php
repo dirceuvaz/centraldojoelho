@@ -44,12 +44,29 @@
             </div>
         <?php endif; ?>
 
+        <?php if (isset($_GET['cadastro']) && $_GET['cadastro'] === 'pendente'): ?>
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-clock-history"></i> Cadastro Realizado!</h5>
+                <p class="mb-0">Seu cadastro foi realizado com sucesso, mas precisa ser autorizado antes do primeiro acesso.</p>
+                <hr>
+                <p class="mb-0">
+                    <?php if (isset($_GET['tipo']) && $_GET['tipo'] === 'medico'): ?>
+                        Aguarde a liberação pela administração do sistema.
+                    <?php else: ?>
+                        Aguarde a liberação pelo seu médico responsável.
+                    <?php endif; ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
         <?php if (isset($_GET['error'])): ?>
             <div class="alert alert-danger" role="alert">
                 <?php 
                 $mensagens = [
                     'invalid' => 'Email ou senha incorretos',
-                    'empty' => 'Preencha todos os campos'
+                    'empty' => 'Por favor, preencha todos os campos',
+                    'unauthorized' => 'Seu acesso ainda não foi autorizado. Por favor, aguarde a liberação.',
+                    'inactive' => 'Sua conta está inativa. Entre em contato com o suporte.'
                 ];
                 echo $mensagens[$_GET['error']] ?? 'Erro ao fazer login';
                 ?>

@@ -15,7 +15,7 @@ $offset = ($pagina_atual - 1) * $limite_por_pagina;
 
 // Busca os dados do médico
 $stmt = $pdo->prepare("
-    SELECT m.*, u.nome, u.id as usuario_id
+    SELECT m.*, u.nome, u.id as usuario_id, u.status as usuario_status
     FROM medicos m
     JOIN usuarios u ON u.id = m.id_usuario
     WHERE m.id_usuario = ?
@@ -23,17 +23,26 @@ $stmt = $pdo->prepare("
 $stmt->execute([$_SESSION['user_id']]);
 $medico = $stmt->fetch();
 
+// Verifica se o médico está liberado
+$medico_liberado = $medico['usuario_status'] === 'ativo';
+
 // Processar ações
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
-        if ($_POST['action'] === 'autorizar') {
+        if ($_POST['action'] === 'autorizar' && $medico_liberado) {
+            $id_paciente = filter_input(INPUT_POST, 'id_paciente', FILTER_VALIDATE_INT);
+            if (!$id_paciente) {
+                throw new Exception('ID do paciente inválido');
+            }
+
             $stmt = $pdo->prepare("
                 UPDATE usuarios u
                 JOIN pacientes p ON p.id_usuario = u.id
                 SET u.status = 'ativo', p.status = 'ativo'
-                WHERE u.id = ? AND p.medico = ?
+                WHERE p.id = ? AND p.medico = ?
             ");
-            $stmt->execute([$_POST['id_paciente'], $medico['nome']]);
+            $stmt->execute([$id_paciente, $medico['nome']]);
+            
             header('Location: index.php?page=medico/pacientes&sucesso=Paciente autorizado com sucesso');
             exit;
         }
@@ -47,9 +56,9 @@ $stmt = $pdo->prepare("
     SELECT COUNT(*) as total
     FROM usuarios u
     JOIN pacientes p ON p.id_usuario = u.id
-    WHERE p.medico = 'Lucas'
+    WHERE p.medico = ?
 ");
-$stmt->execute();
+$stmt->execute([$medico['nome']]);
 $total_pacientes = $stmt->fetch()['total'];
 $total_paginas = ceil($total_pacientes / $limite_por_pagina);
 
@@ -63,18 +72,19 @@ $stmt = $pdo->prepare("
         p.data_cirurgia,
         p.problema,
         p.status as paciente_status,
-        p.data_cadastro
+        p.data_cadastro,
+        p.id as paciente_id
     FROM usuarios u
     JOIN pacientes p ON p.id_usuario = u.id
-    WHERE p.medico = 'Lucas'
+    WHERE p.medico = ?
     ORDER BY p.data_cadastro DESC
     LIMIT ?, ?
 ");
-$stmt->bindValue(1, $offset, PDO::PARAM_INT);
-$stmt->bindValue(2, $limite_por_pagina, PDO::PARAM_INT);
+$stmt->bindValue(1, $medico['nome'], PDO::PARAM_STR);
+$stmt->bindValue(2, $offset, PDO::PARAM_INT);
+$stmt->bindValue(3, $limite_por_pagina, PDO::PARAM_INT);
 $stmt->execute();
 $pacientes = $stmt->fetchAll();
-
 ?>
 
 <!DOCTYPE html>
@@ -86,35 +96,19 @@ $pacientes = $stmt->fetchAll();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
-        .card-dashboard {
-            transition: transform 0.2s;
-            cursor: pointer;
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .card-dashboard:hover {
-            transform: translateY(-5px);
-        }
-        .icon-large {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: #0d6efd;
-        }
-        .bg-primary {
-            background-color: #0d6efd !important;
+        .status-badge {
+            min-width: 80px;
         }
         .table-actions {
-            width: 100px;
+            width: 200px;
         }
-        .status-badge {
-            width: 100px;
-            text-align: center;
-        }
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
+        .alert-medico {
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+            color: #664d03;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.375rem;
         }
     </style>
 </head>
@@ -127,25 +121,21 @@ $pacientes = $stmt->fetchAll();
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=medico/painel">
-                            <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
+                        <a class="nav-link active" href="index.php?page=medico/pacientes">
+                            <i class="bi bi-people"></i> Pacientes
                         </a>
                     </li>
                 </ul>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
-                            <i class="bi bi-person-circle"></i> Perfil
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="logout.php">
-                            <i class="bi bi-box-arrow-right"></i> Sair
-                        </a>
-                    </li>
-                </ul>
+                <div class="d-flex">
+                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#perfilModal">
+                        <i class="bi bi-person-circle"></i> Perfil
+                    </button>
+                    <a href="logout.php" class="btn btn-outline-light ms-2">
+                        <i class="bi bi-box-arrow-right"></i> Sair
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
@@ -157,6 +147,17 @@ $pacientes = $stmt->fetchAll();
                 <p class="text-muted">Gerencie seus pacientes e autorize novos acessos</p>
             </div>
         </div>
+
+        <?php if (!$medico_liberado): ?>
+        <div class="alert-medico" role="alert">
+            <h4 class="alert-heading">
+                <i class="bi bi-exclamation-triangle"></i> Acesso Limitado
+            </h4>
+            <p class="mb-0">
+                Seu cadastro está pendente de liberação. Algumas funcionalidades estarão indisponíveis até que seu acesso seja autorizado pela administração.
+            </p>
+        </div>
+        <?php endif; ?>
 
         <?php if (isset($_GET['sucesso'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -213,22 +214,21 @@ $pacientes = $stmt->fetchAll();
                                     </td>
                                     <td><?php echo date('d/m/Y', strtotime($paciente['data_cadastro'])); ?></td>
                                     <td>
-                                        <div class="btn-group">
-                                            <?php if ($paciente['usuario_status'] === 'pendente'): ?>
-                                                <form method="POST">
-                                                    <input type="hidden" name="action" value="autorizar">
-                                                    <input type="hidden" name="id_paciente" value="<?php echo $paciente['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-success" title="Autorizar acesso">
-                                                        <i class="bi bi-check-lg"></i>
-                                                    </button>
-                                                </form>
-                                            <?php endif; ?>
-                                            <button type="button" class="btn btn-sm btn-primary" 
-                                                    onclick="window.location='index.php?page=medico/paciente_detalhes&id=<?php echo $paciente['id']; ?>'"
-                                                    title="Ver detalhes">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                        </div>
+                                        <?php if ($paciente['usuario_status'] === 'pendente' && $medico_liberado): ?>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="action" value="autorizar">
+                                                <input type="hidden" name="id_paciente" value="<?php echo $paciente['paciente_id']; ?>">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="bi bi-check-circle"></i> Liberar Acesso
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                        
+                                        <a href="index.php?page=medico/paciente_acompanhamento&id=<?php echo $paciente['paciente_id']; ?>" 
+                                           class="btn btn-primary btn-sm <?php echo ($paciente['usuario_status'] === 'pendente' ? 'ms-2' : ''); ?>" 
+                                           title="Gerenciar Paciente">
+                                            <i class="bi bi-clipboard-pulse"></i> Gerenciar
+                                        </a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -237,15 +237,14 @@ $pacientes = $stmt->fetchAll();
                     </table>
                 </div>
 
+                <!-- Paginação -->
                 <?php if ($total_paginas > 1): ?>
                 <div class="pagination-container">
                     <nav aria-label="Navegação de páginas">
                         <ul class="pagination">
                             <?php if ($pagina_atual > 1): ?>
                             <li class="page-item">
-                                <a class="page-link" href="?page=medico/pacientes&pagina=<?php echo $pagina_atual - 1; ?>">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
+                                <a class="page-link" href="?page=medico/pacientes&pagina=<?php echo $pagina_atual - 1; ?>">Anterior</a>
                             </li>
                             <?php endif; ?>
 
@@ -257,9 +256,7 @@ $pacientes = $stmt->fetchAll();
 
                             <?php if ($pagina_atual < $total_paginas): ?>
                             <li class="page-item">
-                                <a class="page-link" href="?page=medico/pacientes&pagina=<?php echo $pagina_atual + 1; ?>">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
+                                <a class="page-link" href="?page=medico/pacientes&pagina=<?php echo $pagina_atual + 1; ?>">Próxima</a>
                             </li>
                             <?php endif; ?>
                         </ul>
@@ -275,19 +272,23 @@ $pacientes = $stmt->fetchAll();
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Meu Perfil</h5>
+                    <h5 class="modal-title">Perfil do Médico</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p><strong>Nome:</strong> <?php echo htmlspecialchars($medico['nome']); ?></p>
                     <p><strong>CRM:</strong> <?php echo htmlspecialchars($medico['crm']); ?></p>
                     <p><strong>Especialidade:</strong> <?php echo htmlspecialchars($medico['especialidade']); ?></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <button type="button" class="btn btn-primary" onclick="window.location='index.php?page=medico/editar_perfil'">
-                        Editar Perfil
-                    </button>
+                    <p>
+                        <strong>Status:</strong>
+                        <?php if ($medico['usuario_status'] === 'pendente'): ?>
+                            <span class="badge bg-warning">Pendente</span>
+                        <?php elseif ($medico['usuario_status'] === 'ativo'): ?>
+                            <span class="badge bg-success">Ativo</span>
+                        <?php else: ?>
+                            <span class="badge bg-danger">Inativo</span>
+                        <?php endif; ?>
+                    </p>
                 </div>
             </div>
         </div>

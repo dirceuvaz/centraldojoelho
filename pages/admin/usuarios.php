@@ -256,7 +256,7 @@ $usuarios = $stmt->fetchAll();
                                                     <input type="hidden" name="id_usuario" value="<?php echo $usuario['id']; ?>">
                                                     <input type="hidden" name="acao" value="aprovar">
                                                     <button type="submit" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-check-lg"></i> Aprovar
+                                                        <i class="bi bi-check-circle"></i> Liberar Acesso
                                                     </button>
                                                 </form>
                                                 <?php endif; ?>
@@ -266,7 +266,7 @@ $usuarios = $stmt->fetchAll();
                                                     <input type="hidden" name="id_usuario" value="<?php echo $usuario['id']; ?>">
                                                     <input type="hidden" name="acao" value="bloquear">
                                                     <button type="submit" class="btn btn-danger btn-sm">
-                                                        <i class="bi bi-x-lg"></i> Bloquear
+                                                        <i class="bi bi-lock-fill"></i> Bloquear
                                                     </button>
                                                 </form>
                                                 <?php endif; ?>
