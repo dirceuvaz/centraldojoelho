@@ -83,10 +83,13 @@ if (isset($_GET['erro'])) {
         .card-text {
             color: #6c757d;
         }
+        .navbar-custom {
+            background-color: #231F5D !important;
+        }
     </style>
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
             <a class="navbar-brand" href="index.php?page=medico/painel">Central do Joelho</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

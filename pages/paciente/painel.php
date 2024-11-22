@@ -50,15 +50,6 @@ try {
     ];
 }
 
-// Busca os exercícios do paciente
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as total_exercicios
-    FROM exercicios
-    WHERE id_paciente = ?
-");
-$stmt->execute([$paciente['id']]);
-$exercicios = $stmt->fetch();
-
 // Busca as cirurgias do paciente
 $stmt = $pdo->prepare("
     SELECT COUNT(*) as total_cirurgias
@@ -68,14 +59,15 @@ $stmt = $pdo->prepare("
 $stmt->execute([$paciente['id']]);
 $cirurgias = $stmt->fetch();
 
-// Busca os exames do paciente
+// Busca os exercícios do paciente
 $stmt = $pdo->prepare("
-    SELECT COUNT(*) as total_exames
-    FROM exames
+    SELECT COUNT(*) as total_exercicios
+    FROM exercicios
     WHERE id_paciente = ?
 ");
 $stmt->execute([$paciente['id']]);
-$exames = $stmt->fetch();
+$exercicios = $stmt->fetch();
+
 ?>
 
 <!DOCTYPE html>
@@ -138,7 +130,7 @@ $exames = $stmt->fetch();
         </div>
     </nav>
 
-    <div class="container my-4">
+    <div class="container mt-4">
         <div class="row mb-4">
             <div class="col">
                 <h2>Painel do Paciente</h2>
@@ -148,36 +140,52 @@ $exames = $stmt->fetch();
 
         <div class="row g-4">
             <!-- Exercícios -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/exercicios'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-activity icon-large"></i>
-                        <h5 class="card-title">Exercícios</h5>
-                        <p class="card-text">Acompanhe seus exercícios</p>
+            <div class="col-md-3">
+                <a href="index.php?page=paciente/exercicios" class="text-decoration-none">
+                    <div class="card card-dashboard h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-activity icon-large text-primary"></i>
+                            <h3 class="card-title"><?php echo $exercicios['total_exercicios']; ?></h3>
+                            <p class="card-text">Exercícios</p>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
 
-            <!-- Perguntas -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/perguntas'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-question-circle icon-large"></i>
-                        <h5 class="card-title">Perguntas</h5>
-                        <p class="card-text">Faça perguntas ao seu médico</p>
+            <div class="col-md-3">
+                <a href="index.php?page=paciente/perguntas" class="text-decoration-none">
+                    <div class="card card-dashboard h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-question-circle icon-large text-primary"></i>
+                            <h3 class="card-title">Perguntas</h3>
+                            <p class="card-text">Tire suas dúvidas</p>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
 
-            <!-- Semanas -->
-            <div class="col-md-4">
-                <div class="card card-dashboard h-100" onclick="window.location='index.php?page=paciente/semanas'">
-                    <div class="card-body text-center">
-                        <i class="bi bi-calendar-week icon-large"></i>
-                        <h5 class="card-title">Semanas</h5>
-                        <p class="card-text">Acompanhe sua evolução semanal</p>
+            <div class="col-md-3">
+                <a href="index.php?page=paciente/semanas" class="text-decoration-none">
+                    <div class="card card-dashboard h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-week icon-large text-primary"></i>
+                            <h3 class="card-title">Semanas</h3>
+                            <p class="card-text">Acompanhe sua evolução semanal</p>
+                        </div>
                     </div>
-                </div>
+                </a>
+            </div>
+
+            <div class="col-md-3">
+                <a href="index.php?page=paciente/reabilitacao" class="text-decoration-none">
+                    <div class="card card-dashboard h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clipboard2-pulse icon-large text-primary"></i>
+                            <h3 class="card-title">Reabilitação</h3>
+                            <p class="card-text">Minhas Orientações</p>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>

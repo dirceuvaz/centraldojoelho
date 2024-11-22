@@ -1,12 +1,15 @@
 <?php
 session_start();
 
+// Páginas que não precisam de login
+$public_pages = ['login', 'logout', 'login_process'];
+
 // Obtém a página da URL ou usa 'login' como padrão
 $page = isset($_GET['page']) ? $_GET['page'] : 'login';
 
-// Se for a página de processamento de login
-if ($page === 'login_process') {
-    require 'pages/login_process.php';
+// Se não for página pública, verifica se está logado
+if (!in_array($page, $public_pages) && !isset($_SESSION['user_id'])) {
+    header('Location: index.php?page=login');
     exit;
 }
 
@@ -18,10 +21,20 @@ if (strpos($page, 'admin/') === 0) {
     }
 }
 
-// Se não for login ou cadastro, verifica se está logado
-if (!in_array($page, ['login', 'cadastro']) && !isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login');
-    exit;
+// Se for página de médico, verifica se é médico
+if (strpos($page, 'medico/') === 0) {
+    if (!isset($_SESSION['user_id']) || $_SESSION['tipo_usuario'] !== 'medico') {
+        header('Location: index.php?page=login');
+        exit;
+    }
+}
+
+// Se for página de paciente, verifica se é paciente
+if (strpos($page, 'paciente/') === 0) {
+    if (!isset($_SESSION['user_id']) || $_SESSION['tipo_usuario'] !== 'paciente') {
+        header('Location: index.php?page=login');
+        exit;
+    }
 }
 
 // Carrega a página apropriada

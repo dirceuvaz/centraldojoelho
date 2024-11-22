@@ -8,83 +8,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         switch ($acao) {
-            case 'novo':
-                // Validar dados
-                $nome = filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_STRING);
-                $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-                $tipo = filter_input(INPUT_POST, 'tipo_usuario', FILTER_SANITIZE_STRING);
-                $senha = $_POST['senha'] ?? '';
-                $especialidade = filter_input(INPUT_POST, 'especialidade', FILTER_SANITIZE_STRING);
-                $crm = filter_input(INPUT_POST, 'crm', FILTER_SANITIZE_STRING);
-
-                if (!$nome || !$email || !$tipo || !$senha) {
-                    throw new Exception('Todos os campos são obrigatórios');
-                }
-
-                // Validações específicas para médico
-                if ($tipo === 'medico' && (!$especialidade || !$crm)) {
-                    throw new Exception('Para médicos, CRM e Especialidade são obrigatórios');
-                }
-
-                // Verificar se email já existe
-                $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-                $stmt->execute([$email]);
-                if ($stmt->fetch()) {
-                    throw new Exception('Este email já está cadastrado');
-                }
-
-                // Iniciar transação
-                $pdo->beginTransaction();
-
-                try {
-                    // Inserir novo usuário
-                    $stmt = $pdo->prepare("
-                        INSERT INTO usuarios (nome, email, tipo_usuario, senha, status)
-                        VALUES (?, ?, ?, ?, 'ativo')
-                    ");
-                    $stmt->execute([
-                        $nome,
-                        $email,
-                        $tipo,
-                        password_hash($senha, PASSWORD_DEFAULT)
-                    ]);
-
-                    $id_usuario = $pdo->lastInsertId();
-
-                    // Se for médico, inserir na tabela médicos
-                    if ($tipo === 'medico') {
-                        $stmt = $pdo->prepare("
-                            INSERT INTO medicos (id_usuario, crm, especialidade, status)
-                            VALUES (?, ?, ?, 'ativo')
-                        ");
-                        $stmt->execute([
-                            $id_usuario,
-                            $crm,
-                            $especialidade
-                        ]);
-                    }
-
-                    // Commit da transação
-                    $pdo->commit();
-                    $_SESSION['success'] = 'Usuário criado com sucesso!';
-                    header('Location: index.php?page=admin/usuarios');
-                    exit;
-                } catch (Exception $e) {
-                    $pdo->rollBack();
-                    throw $e;
-                }
-                break;
-
             case 'editar':
                 $id = filter_input(INPUT_POST, 'id_usuario', FILTER_VALIDATE_INT);
                 $nome = filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_STRING);
                 $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+                $cpf = filter_input(INPUT_POST, 'cpf', FILTER_SANITIZE_STRING);
                 $tipo = filter_input(INPUT_POST, 'tipo_usuario', FILTER_SANITIZE_STRING);
                 $senha = $_POST['senha'] ?? '';
                 $especialidade = filter_input(INPUT_POST, 'especialidade', FILTER_SANITIZE_STRING);
                 $crm = filter_input(INPUT_POST, 'crm', FILTER_SANITIZE_STRING);
+                $id_medico = filter_input(INPUT_POST, 'id_medico', FILTER_VALIDATE_INT);
 
-                if (!$id || !$nome || !$email || !$tipo) {
+                if (!$id || !$nome || !$email || !$tipo || !$cpf) {
                     throw new Exception('Dados inválidos');
                 }
 
@@ -100,6 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('Este email já está cadastrado para outro usuário');
                 }
 
+                // Verificar se CPF já existe (exceto para o próprio usuário)
+                $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE cpf = ? AND id != ?");
+                $stmt->execute([$cpf, $id]);
+                if ($stmt->fetch()) {
+                    throw new Exception('Este CPF já está cadastrado para outro usuário');
+                }
+
                 // Iniciar transação
                 $pdo->beginTransaction();
 
@@ -108,12 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($senha) {
                         $stmt = $pdo->prepare("
                             UPDATE usuarios 
-                            SET nome = ?, email = ?, tipo_usuario = ?, senha = ?
+                            SET nome = ?, email = ?, cpf = ?, tipo_usuario = ?, senha = ?
                             WHERE id = ?
                         ");
                         $stmt->execute([
                             $nome,
                             $email,
+                            $cpf,
                             $tipo,
                             password_hash($senha, PASSWORD_DEFAULT),
                             $id
@@ -121,12 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $stmt = $pdo->prepare("
                             UPDATE usuarios 
-                            SET nome = ?, email = ?, tipo_usuario = ?
+                            SET nome = ?, email = ?, cpf = ?, tipo_usuario = ?
                             WHERE id = ?
                         ");
                         $stmt->execute([
                             $nome,
                             $email,
+                            $cpf,
                             $tipo,
                             $id
                         ]);
@@ -168,9 +112,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->execute([$id]);
                     }
 
+                    // Se for paciente, atualizar o médico responsável
+                    if ($tipo === 'paciente' && $id_medico) {
+                        // Verificar se já existe registro na tabela pacientes
+                        $stmt = $pdo->prepare("SELECT id FROM pacientes WHERE id_usuario = ?");
+                        $stmt->execute([$id]);
+                        $paciente = $stmt->fetch();
+
+                        if ($paciente) {
+                            // Atualizar o médico do paciente
+                            $stmt = $pdo->prepare("
+                                UPDATE pacientes 
+                                SET medico = (SELECT id FROM medicos WHERE id = ?)
+                                WHERE id_usuario = ?
+                            ");
+                            $stmt->execute([$id_medico, $id]);
+                        } else {
+                            // Se não existe registro do paciente, criar um novo
+                            $stmt = $pdo->prepare("
+                                INSERT INTO pacientes (id_usuario, medico, data_cirurgia, fisioterapeuta, problema, status)
+                                VALUES (?, (SELECT id FROM medicos WHERE id = ?), CURRENT_DATE, '', '', 'pendente')
+                            ");
+                            $stmt->execute([$id, $id_medico]);
+                        }
+                    }
+
                     // Commit da transação
                     $pdo->commit();
                     $_SESSION['success'] = 'Usuário atualizado com sucesso!';
+                    header('Location: index.php?page=admin/usuarios');
+                    exit;
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
+                break;
+
+            case 'novo':
+                // Validar dados
+                $nome = filter_input(INPUT_POST, 'nome', FILTER_SANITIZE_STRING);
+                $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+                $tipo = filter_input(INPUT_POST, 'tipo_usuario', FILTER_SANITIZE_STRING);
+                $senha = $_POST['senha'] ?? '';
+                $especialidade = filter_input(INPUT_POST, 'especialidade', FILTER_SANITIZE_STRING);
+                $crm = filter_input(INPUT_POST, 'crm', FILTER_SANITIZE_STRING);
+                $cpf = filter_input(INPUT_POST, 'cpf', FILTER_SANITIZE_STRING);
+
+                if (!$nome || !$email || !$tipo || !$senha || !$cpf) {
+                    throw new Exception('Todos os campos são obrigatórios');
+                }
+
+                // Validações específicas para médico
+                if ($tipo === 'medico' && (!$especialidade || !$crm)) {
+                    throw new Exception('Para médicos, CRM e Especialidade são obrigatórios');
+                }
+
+                // Verificar se email já existe
+                $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
+                $stmt->execute([$email]);
+                if ($stmt->fetch()) {
+                    throw new Exception('Este email já está cadastrado');
+                }
+
+                // Verificar se CPF já existe
+                $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE cpf = ?");
+                $stmt->execute([$cpf]);
+                if ($stmt->fetch()) {
+                    throw new Exception('Este CPF já está cadastrado');
+                }
+
+                // Iniciar transação
+                $pdo->beginTransaction();
+
+                try {
+                    // Inserir novo usuário
+                    $stmt = $pdo->prepare("
+                        INSERT INTO usuarios (nome, email, cpf, tipo_usuario, senha, status)
+                        VALUES (?, ?, ?, ?, ?, 'ativo')
+                    ");
+                    $stmt->execute([
+                        $nome,
+                        $email,
+                        $cpf,
+                        $tipo,
+                        password_hash($senha, PASSWORD_DEFAULT)
+                    ]);
+
+                    $id_usuario = $pdo->lastInsertId();
+
+                    // Se for médico, inserir na tabela médicos
+                    if ($tipo === 'medico') {
+                        $stmt = $pdo->prepare("
+                            INSERT INTO medicos (id_usuario, crm, especialidade, status)
+                            VALUES (?, ?, ?, 'ativo')
+                        ");
+                        $stmt->execute([
+                            $id_usuario,
+                            $crm,
+                            $especialidade
+                        ]);
+                    }
+
+                    // Commit da transação
+                    $pdo->commit();
+                    $_SESSION['success'] = 'Usuário criado com sucesso!';
                     header('Location: index.php?page=admin/usuarios');
                     exit;
                 } catch (Exception $e) {
@@ -236,48 +281,81 @@ $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 10;
 $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $offset = ($pagina - 1) * $limite;
 
-// Consulta principal
-$sql = "SELECT u.*, m.crm, m.especialidade 
-        FROM usuarios u 
-        LEFT JOIN medicos m ON u.id = m.id_usuario 
-        WHERE 1=1";
-$sqlCount = "SELECT COUNT(*) 
-             FROM usuarios u 
-             LEFT JOIN medicos m ON u.id = m.id_usuario 
-             WHERE 1=1";
-$params = [];
+// Buscar total de registros
+$sql = "
+    SELECT COUNT(DISTINCT u.id) as total
+    FROM usuarios u 
+    LEFT JOIN medicos m ON u.id = m.id_usuario
+    WHERE 1=1
+";
 
-if (!empty($busca)) {
-    $sql .= " AND (u.nome LIKE ? OR u.email LIKE ?)";
-    $sqlCount .= " AND (u.nome LIKE ? OR u.email LIKE ?)";
-    $params[] = "%{$busca}%";
-    $params[] = "%{$busca}%";
+if ($busca) {
+    $sql .= " AND (u.nome LIKE :busca OR u.email LIKE :busca OR u.cpf LIKE :busca)";
 }
 
 if ($status !== 'todos') {
-    $sql .= " AND u.status = ?";
-    $sqlCount .= " AND u.status = ?";
-    $params[] = $status;
+    $sql .= " AND u.status = :status";
 }
-
-if ($tipo !== 'todos') {
-    $sql .= " AND u.tipo_usuario = ?";
-    $sqlCount .= " AND u.tipo_usuario = ?";
-    $params[] = $tipo;
-}
-
-// Obter total de registros
-$stmtCount = $pdo->prepare($sqlCount);
-$stmtCount->execute($params);
-$totalRegistros = $stmtCount->fetchColumn();
-$totalPaginas = ceil($totalRegistros / $limite);
-
-// Adicionar ordenação e limite
-$sql .= " ORDER BY u.nome LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
 
 $stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$usuarios = $stmt->fetchAll();
+
+if ($busca) {
+    $busca_param = "%{$busca}%";
+    $stmt->bindParam(':busca', $busca_param);
+}
+
+if ($status !== 'todos') {
+    $stmt->bindParam(':status', $status);
+}
+
+$stmt->execute();
+$total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+// Calcular páginas
+$por_pagina = 10;
+$total_paginas = ceil($total / $por_pagina);
+$pagina = isset($_GET['pagina']) ? max(1, min($total_paginas, intval($_GET['pagina']))) : 1;
+$offset = ($pagina - 1) * $por_pagina;
+
+// Buscar usuários
+$sql = "
+    SELECT DISTINCT 
+        u.*, 
+        m.crm,
+        m.especialidade,
+        p.medico as id_medico
+    FROM usuarios u 
+    LEFT JOIN medicos m ON u.id = m.id_usuario
+    LEFT JOIN pacientes p ON u.id = p.id_usuario
+    WHERE 1=1
+";
+
+if ($busca) {
+    $sql .= " AND (u.nome LIKE :busca OR u.email LIKE :busca OR u.cpf LIKE :busca)";
+}
+
+if ($status !== 'todos') {
+    $sql .= " AND u.status = :status";
+}
+
+$sql .= " ORDER BY u.nome LIMIT :limit OFFSET :offset";
+
+$stmt = $pdo->prepare($sql);
+
+if ($busca) {
+    $busca_param = "%{$busca}%";
+    $stmt->bindParam(':busca', $busca_param);
+}
+
+if ($status !== 'todos') {
+    $stmt->bindParam(':status', $status);
+}
+
+$stmt->bindParam(':limit', $por_pagina, PDO::PARAM_INT);
+$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+
+$usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -638,7 +716,9 @@ $usuarios = $stmt->fetchAll();
                                                                 '<?php echo htmlspecialchars($usuario['email']); ?>',
                                                                 '<?php echo htmlspecialchars($usuario['tipo_usuario']); ?>',
                                                                 '<?php echo isset($usuario['crm']) ? htmlspecialchars($usuario['crm']) : ''; ?>',
-                                                                '<?php echo isset($usuario['especialidade']) ? htmlspecialchars($usuario['especialidade']) : ''; ?>'
+                                                                '<?php echo isset($usuario['especialidade']) ? htmlspecialchars($usuario['especialidade']) : ''; ?>',
+                                                                '<?php echo htmlspecialchars($usuario['cpf'] ?? ''); ?>',
+                                                                '<?php echo isset($usuario['id_medico']) ? $usuario['id_medico'] : ''; ?>'
                                                             )">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
@@ -688,12 +768,12 @@ $usuarios = $stmt->fetchAll();
                                         </a>
                                     </li>
                                     <?php endif; ?>
-                                    <?php for ($i = 1; $i <= $totalPaginas; $i++): ?>
+                                    <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
                                     <li class="page-item <?php echo $i === $pagina ? 'active' : ''; ?>">
                                         <a class="page-link" href="?page=admin/usuarios&pagina=<?php echo $i; ?>&limite=<?php echo $limite; ?>&status=<?php echo $status; ?>&tipo=<?php echo $tipo; ?>&busca=<?php echo $busca; ?>"><?php echo $i; ?></a>
                                     </li>
                                     <?php endfor; ?>
-                                    <?php if ($pagina < $totalPaginas): ?>
+                                    <?php if ($pagina < $total_paginas): ?>
                                     <li class="page-item">
                                         <a class="page-link" href="?page=admin/usuarios&pagina=<?php echo $pagina + 1; ?>&limite=<?php echo $limite; ?>&status=<?php echo $status; ?>&tipo=<?php echo $tipo; ?>&busca=<?php echo $busca; ?>" aria-label="Next">
                                             <span aria-hidden="true">&raquo;</span>
@@ -729,8 +809,12 @@ $usuarios = $stmt->fetchAll();
                             <input type="email" class="form-control" name="email" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text" class="form-control" name="cpf" required maxlength="14">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Tipo de Usuário</label>
-                            <select class="form-select" name="tipo_usuario" required onchange="toggleMedicoFields(this)">
+                            <select class="form-select" name="tipo_usuario" required onchange="toggleUserTypeFields(this)">
                                 <option value="">Selecione...</option>
                                 <option value="admin">Administrador</option>
                                 <option value="medico">Médico</option>
@@ -749,6 +833,29 @@ $usuarios = $stmt->fetchAll();
                             <div class="mb-3">
                                 <label class="form-label">Especialidade</label>
                                 <input type="text" class="form-control" name="especialidade">
+                            </div>
+                        </div>
+                        <div class="paciente-fields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Médico Responsável</label>
+                                <select class="form-select" name="id_medico">
+                                    <option value="">Selecione o médico...</option>
+                                    <?php
+                                    $stmt = $pdo->prepare("
+                                        SELECT m.id, u.nome, m.crm 
+                                        FROM medicos m 
+                                        JOIN usuarios u ON m.id_usuario = u.id 
+                                        WHERE m.status = 'ativo'
+                                        ORDER BY u.nome
+                                    ");
+                                    $stmt->execute();
+                                    $medicos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    foreach ($medicos as $medico) {
+                                        echo '<option value="' . $medico['id'] . '">' . 
+                                             htmlspecialchars($medico['nome']) . ' (CRM: ' . htmlspecialchars($medico['crm']) . ')</option>';
+                                    }
+                                    ?>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -782,8 +889,12 @@ $usuarios = $stmt->fetchAll();
                             <input type="email" class="form-control" name="email" id="edit_email" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">CPF</label>
+                            <input type="text" class="form-control" name="cpf" id="edit_cpf" required maxlength="14">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Tipo de Usuário</label>
-                            <select class="form-select" name="tipo_usuario" id="edit_tipo_usuario" required onchange="toggleMedicoFields(this)">
+                            <select class="form-select" name="tipo_usuario" id="edit_tipo_usuario" required onchange="toggleUserTypeFields(this)">
                                 <option value="">Selecione...</option>
                                 <option value="admin">Administrador</option>
                                 <option value="medico">Médico</option>
@@ -804,6 +915,29 @@ $usuarios = $stmt->fetchAll();
                                 <input type="text" class="form-control" name="especialidade" id="edit_especialidade">
                             </div>
                         </div>
+                        <div class="paciente-fields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Médico Responsável</label>
+                                <select class="form-select" name="id_medico" id="edit_medico">
+                                    <option value="">Selecione o médico...</option>
+                                    <?php
+                                    $stmt = $pdo->prepare("
+                                        SELECT m.id, u.nome, m.crm 
+                                        FROM medicos m 
+                                        JOIN usuarios u ON m.id_usuario = u.id 
+                                        WHERE m.status = 'ativo'
+                                        ORDER BY u.nome
+                                    ");
+                                    $stmt->execute();
+                                    $medicos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    foreach ($medicos as $medico) {
+                                        echo '<option value="' . $medico['id'] . '">' . 
+                                             htmlspecialchars($medico['nome']) . ' (CRM: ' . htmlspecialchars($medico['crm']) . ')</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -817,32 +951,45 @@ $usuarios = $stmt->fetchAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Função para mostrar/esconder campos específicos de médico
-        function toggleMedicoFields(select) {
+        function toggleUserTypeFields(select) {
             const medicoFields = select.closest('.modal-content').querySelector('.medico-fields');
+            const pacienteFields = select.closest('.modal-content').querySelector('.paciente-fields');
             if (medicoFields) {
                 if (select.value === 'medico') {
                     medicoFields.style.display = 'block';
                     medicoFields.querySelectorAll('input').forEach(input => input.required = true);
+                    pacienteFields.style.display = 'none';
+                    pacienteFields.querySelectorAll('input').forEach(input => input.required = false);
+                } else if (select.value === 'paciente') {
+                    pacienteFields.style.display = 'block';
+                    pacienteFields.querySelectorAll('input').forEach(input => input.required = true);
+                    medicoFields.style.display = 'none';
+                    medicoFields.querySelectorAll('input').forEach(input => input.required = false);
                 } else {
                     medicoFields.style.display = 'none';
                     medicoFields.querySelectorAll('input').forEach(input => input.required = false);
+                    pacienteFields.style.display = 'none';
+                    pacienteFields.querySelectorAll('input').forEach(input => input.required = false);
                 }
             }
         }
 
         // Carregar dados do usuário para edição
-        function editarUsuario(id, nome, email, tipo, crm, especialidade) {
+        function editarUsuario(id, nome, email, tipo, crm, especialidade, cpf, id_medico) {
             document.getElementById('edit_id_usuario').value = id;
             document.getElementById('edit_nome').value = nome;
             document.getElementById('edit_email').value = email;
+            document.getElementById('edit_cpf').value = cpf || '';
             document.getElementById('edit_tipo_usuario').value = tipo;
             
             const select = document.getElementById('edit_tipo_usuario');
-            toggleMedicoFields(select);
+            toggleUserTypeFields(select);
             
             if (tipo === 'medico') {
                 document.getElementById('edit_crm').value = crm || '';
                 document.getElementById('edit_especialidade').value = especialidade || '';
+            } else if (tipo === 'paciente' && id_medico) {
+                document.getElementById('edit_medico').value = id_medico;
             }
         }
     </script>
