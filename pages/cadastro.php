@@ -112,7 +112,7 @@ $problemas = [
             </div>
             <?php endif; ?>
 
-            <form id="formCadastro" method="POST" action="pages/cadastro_process.php">
+            <form id="formCadastro" method="POST" action="index.php?page=cadastro_process">
                 <input type="hidden" name="tipo_usuario" value="paciente">
                 
                 <div class="row g-3">

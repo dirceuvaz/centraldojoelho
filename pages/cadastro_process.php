@@ -1,9 +1,9 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once 'config/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../index.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -99,21 +99,36 @@ try {
             $fisioterapeuta = filter_input(INPUT_POST, 'fisioterapeuta', FILTER_SANITIZE_STRING);
             $problema = filter_input(INPUT_POST, 'problema', FILTER_SANITIZE_STRING);
 
-            if (!$data_cirurgia || !$medico || !$fisioterapeuta || !$problema) {
-                throw new Exception('Todos os campos do paciente são obrigatórios');
+            // Validar dados do paciente
+            if (!$data_cirurgia || !$medico || !$problema) {
+                throw new Exception('Data da cirurgia, médico e problema são obrigatórios');
             }
 
+            // Buscar ID do médico
+            $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE nome = ? AND tipo_usuario = 'medico'");
+            $stmt->execute([$medico]);
+            $id_medico = $stmt->fetchColumn();
+
+            if (!$id_medico) {
+                throw new Exception('Médico não encontrado');
+            }
+
+            // Incluir a classe helper de reabilitação
+            require_once 'database/reabilitacao_helper.php';
+            $reabHelper = new ReabilitacaoHelper($pdo);
+
+            // Determinar etapa inicial de reabilitação
+            $etapa = $reabHelper->determinarEtapaReabilitacao($data_cirurgia);
+
+            // Inserir paciente com a etapa inicial
             $stmt = $pdo->prepare("
-                INSERT INTO pacientes (
-                    id_usuario, data_cirurgia, medico, fisioterapeuta, 
-                    problema, status, data_cadastro
-                )
-                VALUES (?, ?, ?, ?, ?, 'pendente', NOW())
+                INSERT INTO pacientes (id_usuario, medico, data_cirurgia, fisioterapeuta, problema, status, data_cadastro)
+                VALUES (?, ?, ?, ?, ?, 'ativo', NOW())
             ");
             $stmt->execute([
                 $id_usuario,
+                $id_medico,
                 $data_cirurgia,
-                $medico,
                 $fisioterapeuta,
                 $problema
             ]);
@@ -124,7 +139,7 @@ try {
         $transaction_started = false;
 
         // Redirecionar com mensagem apropriada
-        header('Location: ../index.php?cadastro=pendente&tipo=' . $tipo_usuario);
+        header('Location: index.php?cadastro=pendente&tipo=' . $tipo_usuario);
         exit;
 
     } catch (Exception $e) {
@@ -135,6 +150,6 @@ try {
     }
 
 } catch (Exception $e) {
-    header('Location: ../index.php?page=cadastro&erro=' . urlencode($e->getMessage()));
+    header('Location: index.php?page=cadastro&erro=' . urlencode($e->getMessage()));
     exit;
 }

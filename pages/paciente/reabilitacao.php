@@ -9,20 +9,38 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipo_usuario'] !== 'paciente') {
 
 $pdo = getConnection();
 
-// Buscar todas as orientações de reabilitação
-$stmt = $pdo->prepare("
-    SELECT r.*, m.descricao as momento_desc, t.descricao as tipo_desc, 
-           u.nome as nome_medico, med.crm
-    FROM reabilitacao r
-    LEFT JOIN momentos_reabilitacao m ON r.momento = m.id
-    LEFT JOIN tipos_reabilitacao t ON r.tipo = t.id
-    LEFT JOIN medicos med ON r.id_medico = med.id
-    LEFT JOIN usuarios u ON med.id_usuario = u.id
-    ORDER BY r.data_criacao DESC
-");
+// Incluir a classe helper de reabilitação
+require_once __DIR__ . '/../../database/reabilitacao_helper.php';
+$reabHelper = new ReabilitacaoHelper($pdo);
 
-$stmt->execute();
-$orientacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Buscar informações do paciente
+$stmt = $pdo->prepare("
+    SELECT p.*, u.nome as nome_medico, u.id as medico_id
+    FROM pacientes p
+    JOIN usuarios u ON p.medico = u.id
+    WHERE p.id_usuario = ?
+");
+$stmt->execute([$_SESSION['user_id']]);
+$paciente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$paciente) {
+    die('Paciente não encontrado');
+}
+
+// Determinar etapa atual de reabilitação
+$etapa_atual = $reabHelper->determinarEtapaReabilitacao($paciente['data_cirurgia']);
+
+// Buscar orientações específicas para a etapa atual
+$orientacoes = $reabHelper->buscarOrientacoes($etapa_atual['momento'], $paciente['medico_id']);
+
+// Se não houver orientações específicas do médico, buscar orientações padrão
+if (empty($orientacoes)) {
+    $orientacoes = $reabHelper->buscarOrientacoes($etapa_atual['momento'], null);
+}
+
+// Preparar dados para exibição
+$dias_pos_cirurgia = $etapa_atual['dias_pos_cirurgia'];
+$momento_descricao = $etapa_atual['descricao'];
 
 ?>
 <!DOCTYPE html>
@@ -68,6 +86,10 @@ $orientacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             background-color: #0d6efd;
             color: white;
         }
+        .dias-badge {
+            background-color: #198754;
+            color: white;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -99,56 +121,54 @@ $orientacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <i class="bi bi-arrow-left"></i> Voltar ao Painel
                             </a>
                         </li>
-                        <li class="breadcrumb-item active" aria-current="page">Reabilitação</li>
                     </ol>
-                </nav>                
+                </nav>
             </div>
         </div>
 
         <div class="row mb-4">
             <div class="col">
-                <h2 class="mb-4">
-                    <i class="bi bi-clipboard2-pulse text-primary"></i>
-                    Orientações de Reabilitação
-                </h2>
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">
+                            <i class="bi bi-calendar-check"></i> 
+                            Seu Programa de Reabilitação
+                        </h4>
+                        <div class="alert alert-info">
+                            <strong>Etapa Atual:</strong> <?php echo htmlspecialchars($momento_descricao); ?>
+                            <?php if ($dias_pos_cirurgia !== null): ?>
+                                <span class="badge dias-badge ms-2">
+                                    <?php echo $dias_pos_cirurgia; ?> dias após a cirurgia
+                                </span>
+                            <?php endif; ?>
+                            <br>
+                            <strong>Data da Cirurgia:</strong> <?php echo date('d/m/Y', strtotime($paciente['data_cirurgia'])); ?><br>
+                            <strong>Médico:</strong> <?php echo htmlspecialchars($paciente['nome_medico']); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="row">
+            <div class="col">
+                <h5 class="mb-3">Orientações para esta etapa:</h5>
                 <?php if (empty($orientacoes)): ?>
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Ainda não há orientações de reabilitação cadastradas.
+                    <div class="alert alert-warning">
+                        Nenhuma orientação disponível para esta etapa.
                     </div>
                 <?php else: ?>
                     <?php foreach ($orientacoes as $orientacao): ?>
-                        <div class="card orientacao-card shadow-sm">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <span class="badge momento-badge me-2">
-                                            <?php echo htmlspecialchars($orientacao['momento_desc']); ?>
-                                        </span>
-                                        <span class="badge tipo-badge">
-                                            <?php echo htmlspecialchars($orientacao['tipo_desc']); ?>
-                                        </span>
-                                    </div>
-                                    <small class="text-muted">
-                                        <?php echo date('d/m/Y', strtotime($orientacao['data_criacao'])); ?>
-                                    </small>
-                                </div>
-
-                                <div class="mb-3">
-                                    <h5><?php echo htmlspecialchars($orientacao['titulo']); ?></h5>
-                                    <?php echo $orientacao['texto']; ?>
-                                </div>
-
-                                <div class="text-muted">
-                                    <small>
-                                        <i class="bi bi-person-badge"></i>
-                                        Dr(a). <?php echo htmlspecialchars($orientacao['nome_medico']); ?>
-                                        <?php if (!empty($orientacao['crm'])): ?>
-                                            - CRM: <?php echo htmlspecialchars($orientacao['crm']); ?>
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
+                        <div class="orientacao-item mb-4">
+                            <h5><?php echo htmlspecialchars($orientacao['titulo']); ?></h5>
+                            <p class="text-muted">
+                                <small>
+                                    <i class="bi bi-calendar-event"></i> 
+                                    <?php echo htmlspecialchars($orientacao['momento']); ?>
+                                </small>
+                            </p>
+                            <div class="orientacao-texto">
+                                <?php echo nl2br(htmlspecialchars($orientacao['texto'])); ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

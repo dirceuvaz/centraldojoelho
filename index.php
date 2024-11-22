@@ -2,7 +2,7 @@
 session_start();
 
 // Páginas que não precisam de login
-$public_pages = ['login', 'logout', 'login_process'];
+$public_pages = ['login', 'logout', 'login_process', 'cadastro', 'cadastro_process'];
 
 // Obtém a página da URL ou usa 'login' como padrão
 $page = isset($_GET['page']) ? $_GET['page'] : 'login';
