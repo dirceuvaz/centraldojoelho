@@ -1,25 +1,9 @@
-<?php
-require_once 'config/database.php';
-
-// Verifica se a sessão já não está ativa antes de iniciá-la
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Verifica se o usuário está logado
-if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php?page=login');
-    exit;
-}
-
-$pdo = getConnection();
-?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - Central do Joelho</title>
+    <title>Painel do Paciente - Central do Joelho</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
@@ -74,6 +58,7 @@ $pdo = getConnection();
         .card {
             transition: transform 0.2s;
             border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
         .card:hover {
             transform: translateY(-5px);
@@ -101,21 +86,44 @@ $pdo = getConnection();
             box-shadow: none !important;
         }
         .accordion-button:not(.collapsed) {
+            background-color: transparent;
             color: white !important;
         }
         .accordion-button::after {
             filter: invert(1);
         }
+        .accordion-collapse {
+            background: none;
+        }
         .accordion-body {
             padding: 0;
         }
         .accordion-body .nav-link {
-            padding-left: 40px;
+            padding-left: 40px !important;
+        }
+        .accordion-body .nav-link:hover {
+            padding-left: 45px !important;
+        }
+        .table th {
+            border-top: none;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .btn-group .btn {
+            margin: 0 2px;
+        }
+        .badge {
+            padding: 0.5em 0.75em;
+            font-weight: 500;
         }
     </style>
 </head>
-<body>
-    <div class="container-fluid">
+<body> 
+<div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 px-0 sidebar">
@@ -124,13 +132,13 @@ $pdo = getConnection();
                 </div>
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" href="index.php?page=admin/painel">
+                        <a class="nav-link" href="index.php?page=admin/painel">
                             <i class="bi bi-speedometer2"></i> Painel
                         </a>
                     </li>
 
-                    <!-- Menu Atendimento -->
-                    <div class="accordion accordion-flush" id="menuAtendimento">
+                     <!-- Menu Atendimento -->
+                      <div class="accordion accordion-flush" id="menuAtendimento">
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button" type="button" data-bs-toggle="collapse" 
@@ -178,7 +186,7 @@ $pdo = getConnection();
                                             <a class="nav-link" href="index.php?page=admin/midias">
                                                 <i class="bi bi-play-circle"></i> Midias
                                             </a>
-                                        </li>                                        
+                                        </li>
                                     </ul>
                                 </div>
                             </div>
@@ -217,13 +225,15 @@ $pdo = getConnection();
                             </div>
                         </div>
                     </div>
+                
+
                 </ul>
             </div>
 
-            <!-- Main Content -->
             <div class="col-md-9 col-lg-10 px-0">
-                 <!-- Top Navbar -->
-                 <div class="top-navbar d-flex justify-content-end">
+                <!-- Top Navbar -->
+                <div class="top-navbar d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Gerenciamento de Midias</h4>
                     <div class="d-flex align-items-center">
                         <span class="me-3">
                             <i class="bi bi-person"></i> 
@@ -237,73 +247,40 @@ $pdo = getConnection();
 
                 <!-- Page Content -->
                 <div class="main-content">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h2 class="mb-1">Painel Administrativo</h2>
-                            <p class="text-muted mb-0">Bem-vindo ao sistema administrativo da Central do Joelho</p>
+                    <?php if (isset($_GET['msg'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?php 
+                            $msg = $_GET['msg'];
+                            switch($msg) {
+                                case 'Usuario_liberado':
+                                    echo 'Usuário liberado com sucesso!';
+                                    break;
+                                case 'Usuario_deletado':
+                                    echo 'Usuário deletado com sucesso!';
+                                    break;
+                                case 'Usuario_criado':
+                                    echo 'Usuário criado com sucesso!';
+                                    break;
+                                case 'Usuario_atualizado':
+                                    echo 'Usuário atualizado com sucesso!';
+                                    break;
+                            }
+                            ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                    </div>
+                    <?php endif; ?>
 
-                    <!-- Cards de Acesso Rápido -->
-                    <div class="row g-4">
-                        <!-- Atendimento -->
-                        <div class="col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-headset icon-large"></i>                                    
-                                    <h5 class="card-title">Atendimento</h5>
-                                    <p class="card-text">Gerencie exercícios, reabilitação e pacientes</p>
-                                    <a href="index.php?page=admin/pacientes" class="btn btn-warning">Acessar</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Mídias -->
-                        <div class="col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-collection-play icon-large"></i>
-                                    <h5 class="card-title">Mídias</h5>
-                                    <p class="card-text">Gerencie vídeos e arquivos do sistema</p>
-                                    <a href="index.php?page=admin/videos" class="btn btn-warning">Acessar</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Configurações -->
-                        <div class="col-md-4">
-                            <div class="card h-100 shadow-sm">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-people icon-large"></i>
-                                    <h5 class="card-title">Usuários</h5>
-                                    <p class="card-text">Gerencie usuários Liberar acesso</p>
-                                    <a href="index.php?page=admin/usuarios" class="btn btn-warning">Acessar</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                  
+                    <div class="mb-4">
+                        <a href="index.php?page=admin/reabilitacao_form" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Nova Mídia
+                        </a>
+                    </div>                    
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Modal Perfil -->
-    <div class="modal fade" id="perfilModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Perfil do Usuário</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p><strong>Nome:</strong> <?php echo isset($_SESSION['user_nome']) ? htmlspecialchars($_SESSION['user_nome']) : 'Não informado'; ?></p>
-                    <p><strong>Email:</strong> <?php echo isset($_SESSION['user_email']) ? htmlspecialchars($_SESSION['user_email']) : 'Não informado'; ?></p>
-                    <p><strong>Tipo:</strong> <?php echo isset($_SESSION['tipo_usuario']) ? htmlspecialchars($_SESSION['tipo_usuario']) : 'Não informado'; ?></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    </div>      
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

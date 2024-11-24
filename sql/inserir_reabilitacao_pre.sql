@@ -1,0 +1,2 @@
+INSERT INTO reabilitacao (titulo, descricao, momento, tipo_problema, sequencia, status) VALUES 
+('Preparação para Cirurgia do Joelho', 'Siga estas orientações importantes:\n\n1. Mantenha uma alimentação saudável\n2. Realize os exames pré-operatórios solicitados\n3. Informe seu médico sobre qualquer medicamento que esteja tomando\n4. Prepare sua casa para o período pós-operatório\n5. Organize seu transporte para o dia da cirurgia', 'Pré Operatório', 1, 1, 'ativo');

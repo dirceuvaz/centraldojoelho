@@ -216,12 +216,7 @@ try {
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
-                            <i class="bi bi-person-circle"></i> Perfil
-                        </a>
-                    </li>
+                <ul class="navbar-nav ms-auto">                    
                     <li class="nav-item">
                         <a class="nav-link" href="logout.php">
                             <i class="bi bi-box-arrow-right"></i> Sair
@@ -316,46 +311,6 @@ try {
                         <p class="card-text">Gerenciar tratamentos</p>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Perfil -->
-    <div class="modal fade" id="perfilModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="index.php?page=medico/perfil_process" method="POST">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Meu Perfil</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Nome</label>
-                            <input type="text" class="form-control" name="nome" value="<?php echo htmlspecialchars($medico['nome']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">E-mail</label>
-                            <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($medico['email']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">CRM</label>
-                            <input type="text" class="form-control" name="crm" value="<?php echo htmlspecialchars($medico['crm']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Especialidade</label>
-                            <input type="text" class="form-control" name="especialidade" value="<?php echo htmlspecialchars($medico['especialidade']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nova Senha</label>
-                            <input type="password" class="form-control" name="senha" placeholder="Deixe em branco para manter a atual">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>

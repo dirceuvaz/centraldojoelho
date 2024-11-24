@@ -38,24 +38,22 @@
             <h2 class="mb-3">Faça o seu Login</h2>
         </div>
 
+        <?php if (isset($_SESSION['cadastro']) && $_SESSION['cadastro'] === 'pendente'): ?>
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-clock-history"></i> Cadastro Realizado!</h5>
+                <p class="mb-0"><?php echo $_SESSION['mensagem']; ?></p>
+            </div>
+            <?php 
+            // Limpa as mensagens da sessão após exibir
+            unset($_SESSION['cadastro']);
+            unset($_SESSION['mensagem']);
+            unset($_SESSION['tipo_usuario']);
+            ?>
+        <?php endif; ?>
+
         <?php if (isset($_GET['msg']) && $_GET['msg'] === 'logout'): ?>
             <div class="alert alert-success" role="alert">
                 <i class="bi bi-check-circle-fill"></i> Você saiu do sistema com sucesso!
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_GET['cadastro']) && $_GET['cadastro'] === 'pendente'): ?>
-            <div class="alert alert-warning" role="alert">
-                <h5 class="alert-heading"><i class="bi bi-clock-history"></i> Cadastro Realizado!</h5>
-                <p class="mb-0">Seu cadastro foi realizado com sucesso, mas precisa ser autorizado antes do primeiro acesso.</p>
-                <hr>
-                <p class="mb-0">
-                    <?php if (isset($_GET['tipo']) && $_GET['tipo'] === 'medico'): ?>
-                        Aguarde a liberação pela administração do sistema.
-                    <?php else: ?>
-                        Aguarde a liberação pelo seu médico responsável.
-                    <?php endif; ?>
-                </p>
             </div>
         <?php endif; ?>
 

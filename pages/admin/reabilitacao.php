@@ -7,59 +7,76 @@ if (!isset($_SESSION['user_id']) || $_SESSION['tipo_usuario'] !== 'admin') {
     exit;
 }
 
-// Processar ações
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        $conn = getConnection();
-        switch ($_POST['action']) {
-            case 'liberar':
-                if (isset($_POST['user_id'])) {
-                    $stmt = $conn->prepare("UPDATE usuarios SET status = 'ativo' WHERE id = ?");
-                    $stmt->execute([$_POST['user_id']]);
-                    header('Location: index.php?page=admin/usuarios&msg=Usuario_liberado');
-                    exit;
-                }
-                break;
-            case 'deletar':
-                if (isset($_POST['user_id'])) {
-                    $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ?");
-                    $stmt->execute([$_POST['user_id']]);
-                    header('Location: index.php?page=admin/usuarios&msg=Usuario_deletado');
-                    exit;
-                }
-                break;
+$conn = getConnection();
+
+// Processar exclusão se solicitado
+if (isset($_POST['delete_id'])) {
+    try {
+        // Primeiro verifica se existem perguntas associadas
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM perguntas WHERE id_reabilitacao = ?");
+        $stmt->execute([$_POST['delete_id']]);
+        $count = $stmt->fetchColumn();
+        
+        if ($count > 0) {
+            header('Location: index.php?page=admin/reabilitacao&error=Não é possível excluir. Existem perguntas associadas a esta reabilitação.');
+            exit;
         }
+        
+        // Se não houver perguntas, pode excluir
+        $stmt = $conn->prepare("UPDATE reabilitacao SET status = 'inativo' WHERE id = ?");
+        $stmt->execute([$_POST['delete_id']]);
+        header('Location: index.php?page=admin/reabilitacao&msg=Reabilitacao_deletada');
+        exit;
+    } catch (PDOException $e) {
+        $error = "Erro ao excluir: " . $e->getMessage();
     }
 }
 
 // Configuração da paginação
-$itens_por_pagina = 10;
-$pagina_atual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
-$offset = ($pagina_atual - 1) * $itens_por_pagina;
+$items_per_page = 10;
+$page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+$offset = ($page - 1) * $items_per_page;
 
-// Buscar total de usuários
-$conn = getConnection();
-$stmt = $conn->query("SELECT COUNT(*) FROM usuarios");
-$total_usuarios = $stmt->fetchColumn();
-$total_paginas = ceil($total_usuarios / $itens_por_pagina);
+// Buscar total de registros
+$stmt = $conn->prepare("
+    SELECT COUNT(*) 
+    FROM reabilitacao 
+    WHERE status = 'ativo'
+");
+$stmt->execute();
+$total_items = $stmt->fetchColumn();
+$total_pages = ceil($total_items / $items_per_page);
 
-// Buscar usuários da página atual
-$query = "SELECT * FROM usuarios ORDER BY data_cadastro DESC LIMIT :limit OFFSET :offset";
-$stmt = $conn->prepare($query);
-$stmt->bindValue(':limit', $itens_por_pagina, PDO::PARAM_INT);
+// Buscar todas as reabilitações ativas com paginação e contagem de perguntas
+$stmt = $conn->prepare("
+    SELECT r.*, m.nome as nome_medico, 
+           SUBSTRING(r.texto, 1, 100) as texto_preview,
+           tr.descricao as nome_tipo_problema,
+           (SELECT COUNT(*) FROM perguntas p WHERE p.id_reabilitacao = r.id) as total_perguntas,
+           r.duracao_dias as duracao,
+           u.nome as nome_paciente
+    FROM reabilitacao r
+    LEFT JOIN usuarios m ON r.id_medico = m.id
+    LEFT JOIN usuarios u ON r.id_paciente = u.id
+    LEFT JOIN tipos_reabilitacao tr ON r.tipo_problema = tr.id
+    WHERE r.status = 'ativo'
+    ORDER BY r.data_criacao DESC
+    LIMIT :limit OFFSET :offset
+");
+$stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
-$usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
+$reabilitacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Usuários - Central do Joelho</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <title>Painel do Paciente - Central do Joelho</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
         :root {
             --primary-color: #231F5D;
@@ -176,8 +193,8 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </style>
 </head>
-<body>
-    <div class="container-fluid">
+<body> 
+<div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 px-0 sidebar">
@@ -279,7 +296,6 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                     </div>
-                
 
                 </ul>
             </div>
@@ -287,7 +303,7 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="col-md-9 col-lg-10 px-0">
                 <!-- Top Navbar -->
                 <div class="top-navbar d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Gerenciamento de Usuários</h4>
+                    <h4 class="mb-0">Gerenciamento de Reabilitação</h4>
                     <div class="d-flex align-items-center">
                         <span class="me-3">
                             <i class="bi bi-person"></i> 
@@ -300,207 +316,129 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <!-- Page Content -->
-                <div class="main-content">                   
-                    <!-- Botão Novo Usuário -->
+                <div class="main-content">
+                    <?php if (isset($_GET['msg'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?php 
+                            $msg = $_GET['msg'];
+                            switch($msg) {
+                                case 'Reabilitacao_deletada':
+                                    echo 'Reabilitação excluída com sucesso!';
+                                    break;
+                                case 'Reabilitacao_criada':
+                                    echo 'Reabilitação criada com sucesso!';
+                                    break;
+                                case 'Reabilitacao_atualizada':
+                                    echo 'Reabilitação atualizada com sucesso!';
+                                    break;
+                            }
+                            ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (isset($_GET['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?php echo $_GET['error']; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Botão Nova Reabilitação -->
                     <div class="mb-4">
-                        <a href="index.php?page=admin/usuarios_form" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Novo Usuário
+                        <a href="index.php?page=admin/reabilitacao_form" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Nova Reabilitação
                         </a>
                     </div>
 
-                    <!-- Tabela de Usuários -->
+                    <!-- Tabela de Reabilitações -->
                     <div class="card">
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Nome</th>
-                                            <th>Email</th>
+                                            <th>Título</th>
                                             <th>Tipo</th>
+                                            <th>Médico</th>
+                                            <th>Paciente</th>
+                                            <th>Duração (dias)</th>
+                                            <th>Perguntas</th>
                                             <th>Status</th>
-                                            <th>Data da Cirurgia</th>
                                             <th>Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($usuarios as $usuario): 
-                                            // Buscar data de cirurgia se for paciente
-                                            $data_cirurgia = '';
-                                            if ($usuario['tipo_usuario'] === 'paciente') {
-                                                $stmt = $conn->prepare("SELECT data_cirurgia FROM pacientes WHERE id_usuario = ?");
-                                                $stmt->execute([$usuario['id']]);
-                                                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-                                                $data_cirurgia = $result ? date('d/m/Y', strtotime($result['data_cirurgia'])) : 'Não definida';
-                                            }
-                                        ?>
+                                        <?php foreach ($reabilitacoes as $reabilitacao): ?>
                                             <tr>
-                                                <td><?php echo htmlspecialchars($usuario['nome']); ?></td>
-                                                <td><?php echo htmlspecialchars($usuario['email']); ?></td>
-                                                <td><?php echo htmlspecialchars($usuario['tipo_usuario']); ?></td>
-                                                <td>
-                                                    <span class="badge <?php 
-                                                        echo $usuario['status'] === 'ativo' ? 'bg-success' : 
-                                                            ($usuario['status'] === 'pendente' ? 'bg-warning' : 'bg-danger'); 
-                                                    ?>">
-                                                        <?php echo htmlspecialchars($usuario['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td><?php echo $usuario['tipo_usuario'] === 'paciente' ? $data_cirurgia : '-'; ?></td>
+                                                <td><?php echo htmlspecialchars($reabilitacao['titulo'] ?? ''); ?></td>
+                                                <td><?php echo htmlspecialchars($reabilitacao['nome_tipo_problema'] ?? 'Não definido'); ?></td>
+                                                <td><?php echo htmlspecialchars($reabilitacao['nome_medico'] ?? 'Não atribuído'); ?></td>
+                                                <td><?php echo htmlspecialchars($reabilitacao['nome_paciente'] ?? 'Não atribuído'); ?></td>
+                                                <td><?php echo $reabilitacao['duracao'] ?? 'Não definido'; ?></td>
+                                                <td><?php echo $reabilitacao['total_perguntas'] ?? '0'; ?></td>
+                                                <td><?php echo htmlspecialchars($reabilitacao['status'] ?? ''); ?></td>
                                                 <td>
                                                     <div class="btn-group">
-                                                        <?php if ($usuario['status'] === 'pendente'): ?>
-                                                        <form method="POST" class="d-inline">
-                                                            <input type="hidden" name="action" value="liberar">
-                                                            <input type="hidden" name="user_id" value="<?php echo $usuario['id']; ?>">
-                                                            <button type="submit" class="btn btn-success btn-sm" title="Liberar Acesso">
-                                                                <i class="bi bi-check-lg"></i>
-                                                            </button>
-                                                        </form>
-                                                        <?php endif; ?>
-                                                        
-                                                        <a href="index.php?page=admin/usuarios_form&id=<?php echo $usuario['id']; ?>" 
-                                                           class="btn btn-primary btn-sm" title="Editar">
+                                                        <a href="index.php?page=admin/reabilitacao_form&id=<?php echo $reabilitacao['id']; ?>" 
+                                                           class="btn btn-sm btn-primary">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
-                                                        
-                                                        <button type="button" class="btn btn-warning btn-sm" title="Alterar Senha"
-                                                                onclick="abrirModalSenha(<?php echo $usuario['id']; ?>, '<?php echo htmlspecialchars($usuario['nome']); ?>')">
-                                                            <i class="bi bi-key"></i>
-                                                        </button>
-
-                                                        <form method="POST" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-                                                            <input type="hidden" name="action" value="deletar">
-                                                            <input type="hidden" name="user_id" value="<?php echo $usuario['id']; ?>">
-                                                            <button type="submit" class="btn btn-danger btn-sm" title="Excluir">
+                                                        <a href="index.php?page=admin/perguntas&reabilitacao_id=<?php echo $reabilitacao['id']; ?>" 
+                                                           class="btn btn-sm btn-info">
+                                                            <i class="bi bi-list-check"></i> Perguntas
+                                                        </a>
+                                                        <?php if ($reabilitacao['total_perguntas'] == 0): ?>
+                                                        <form method="POST" style="display: inline;" 
+                                                              onsubmit="return confirm('Tem certeza que deseja excluir esta reabilitação?');">
+                                                            <input type="hidden" name="delete_id" value="<?php echo $reabilitacao['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger">
                                                                 <i class="bi bi-trash"></i>
                                                             </button>
                                                         </form>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
-
-                                <!-- Paginação -->
-                                <?php if ($total_paginas > 1): ?>
-                                <div class="d-flex justify-content-between align-items-center mt-4">
-                                    <div>
-                                        <?php if ($pagina_atual > 1): ?>
-                                            <a href="index.php?page=admin/usuarios&pagina=<?php echo ($pagina_atual - 1); ?>" 
-                                               class="btn btn-outline-primary">
-                                                <i class="bi bi-chevron-left"></i> Anterior
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <div class="text-center">
-                                        <span class="text-muted">
-                                            Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?>
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <?php if ($pagina_atual < $total_paginas): ?>
-                                            <a href="index.php?page=admin/usuarios&pagina=<?php echo ($pagina_atual + 1); ?>" 
-                                               class="btn btn-outline-primary">
-                                                Próxima <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php endif; ?>
                             </div>
+
+                            <!-- Paginação -->
+                            <?php if ($total_pages > 1): ?>
+                            <nav aria-label="Navegação de página">
+                                <ul class="pagination justify-content-center">
+                                    <?php if ($page > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=admin/reabilitacao&p=<?php echo ($page - 1); ?>" aria-label="Anterior">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                        <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                                            <a class="page-link" href="?page=admin/reabilitacao&p=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $total_pages): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=admin/reabilitacao&p=<?php echo ($page + 1); ?>" aria-label="Próximo">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Modal Alterar Senha -->
-    <div class="modal fade" id="modalAlterarSenha" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Alterar Senha</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Alterando senha para: <strong id="nomeUsuario"></strong></p>
-                    <div class="mb-3">
-                        <label for="novaSenha" class="form-label">Nova Senha</label>
-                        <input type="password" class="form-control" id="novaSenha" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
-                        <input type="password" class="form-control" id="confirmarSenha" required>
-                    </div>
-                    <div id="senhaFeedback" class="invalid-feedback" style="display: none;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="alterarSenha()">Salvar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let usuarioIdAtual = null;
-        const modalAlterarSenha = new bootstrap.Modal(document.getElementById('modalAlterarSenha'));
-
-        function abrirModalSenha(userId, nome) {
-            usuarioIdAtual = userId;
-            document.getElementById('nomeUsuario').textContent = nome;
-            document.getElementById('novaSenha').value = '';
-            document.getElementById('confirmarSenha').value = '';
-            document.getElementById('senhaFeedback').style.display = 'none';
-            modalAlterarSenha.show();
-        }
-
-        function alterarSenha() {
-            const novaSenha = document.getElementById('novaSenha').value;
-            const confirmarSenha = document.getElementById('confirmarSenha').value;
-            const feedback = document.getElementById('senhaFeedback');
-
-            if (novaSenha !== confirmarSenha) {
-                feedback.textContent = 'As senhas não coincidem!';
-                feedback.style.display = 'block';
-                return;
-            }
-
-            if (novaSenha.length < 6) {
-                feedback.textContent = 'A senha deve ter pelo menos 6 caracteres!';
-                feedback.style.display = 'block';
-                return;
-            }
-
-            // Enviar requisição para alterar a senha
-            fetch('index.php?page=admin/alterar_senha', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `user_id=${usuarioIdAtual}&nova_senha=${encodeURIComponent(novaSenha)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    modalAlterarSenha.hide();
-                    alert('Senha alterada com sucesso!');
-                } else {
-                    feedback.textContent = data.message;
-                    feedback.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                feedback.textContent = 'Erro ao alterar a senha. Tente novamente.';
-                feedback.style.display = 'block';
-            });
-        }
-    </script>
+    </div>      
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

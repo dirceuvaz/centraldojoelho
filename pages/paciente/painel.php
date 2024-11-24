@@ -1,72 +1,58 @@
 <?php
-// Verifica se o usuário está logado e é um paciente
+require_once __DIR__ . '/../../config/database.php';
+
+// Verifica se o usuário está logado e é paciente
 if (!isset($_SESSION['user_id']) || $_SESSION['tipo_usuario'] !== 'paciente') {
     header('Location: index.php?page=login');
     exit;
 }
 
-require_once __DIR__ . '/../../config/database.php';
-$pdo = getConnection();
+$conn = getConnection();
+$user_id = $_SESSION['user_id'];
 
-// Busca os dados do paciente
-try {
-    $stmt = $pdo->prepare("
-        SELECT p.*, u.nome, u.email
-        FROM usuarios u 
-        LEFT JOIN pacientes p ON p.id_usuario = u.id
-        WHERE u.id = ?
-    ");
-    $stmt->execute([$_SESSION['user_id']]);
-    $paciente = $stmt->fetch();
+// Buscar informações do paciente e data da cirurgia
+$stmt = $conn->prepare("SELECT u.nome, u.email, p.data_cirurgia 
+                       FROM usuarios u 
+                       LEFT JOIN pacientes p ON u.id = p.id_usuario 
+                       WHERE u.id = ?");
+$stmt->execute([$user_id]);
+$usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Se não existir registro na tabela pacientes, cria um
-    if (!$paciente['id']) {
-        $stmt = $pdo->prepare("
-            INSERT INTO pacientes (id_usuario, data_cirurgia, medico, fisioterapeuta, problema, status)
-            VALUES (?, CURRENT_DATE, '', '', '', 'pendente')
-        ");
-        $stmt->execute([$_SESSION['user_id']]);
-        
-        // Busca os dados novamente
-        $stmt = $pdo->prepare("
-            SELECT p.*, u.nome, u.email
-            FROM usuarios u 
-            LEFT JOIN pacientes p ON p.id_usuario = u.id
-            WHERE u.id = ?
-        ");
-        $stmt->execute([$_SESSION['user_id']]);
-        $paciente = $stmt->fetch();
+// Calculando a semana de reabilitação
+$semanas = "Pré-Operatório";
+if (!empty($usuario['data_cirurgia'])) {
+    $data_atual = time();
+    $data_cirurgia = strtotime($usuario['data_cirurgia']);
+    $resultados_dos_dias = ($data_atual - $data_cirurgia) / (60 * 60 * 24);
+    $duracao_dias = (int) $resultados_dos_dias;
+
+    if ($duracao_dias <= 7) {
+        $semanas = "Primeira Semana";
+    } elseif ($duracao_dias <= 14) {
+        $semanas = "Segunda Semana";
+    } elseif ($duracao_dias <= 21) {
+        $semanas = "Terceira Semana";
+    } elseif ($duracao_dias <= 28) {
+        $semanas = "Quarta Semana";
+    } elseif ($duracao_dias <= 35) {
+        $semanas = "Quinta Semana";
+    } elseif ($duracao_dias <= 70) {
+        $semanas = "Sexta Semana a Décima Semana";
+    } elseif ($duracao_dias <= 140) {
+        $semanas = "Décima Primeira a Vigésima Semana";
+    } elseif ($duracao_dias <= 180) {
+        $semanas = "Sexto Mês";
     }
-} catch (PDOException $e) {
-    error_log("Erro ao buscar/criar dados do paciente: " . $e->getMessage());
-    $paciente = [
-        'nome' => $_SESSION['user_nome'],
-        'email' => '',
-        'data_cirurgia' => date('Y-m-d'),
-        'medico' => '',
-        'fisioterapeuta' => '',
-        'problema' => '',
-        'status' => 'pendente'
-    ];
 }
 
-// Busca as cirurgias do paciente
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as total_cirurgias
-    FROM cirurgias
+// Buscar perguntas associadas ao paciente
+$stmt = $conn->prepare("
+    SELECT COUNT(*) as total_perguntas
+    FROM perguntas
     WHERE id_paciente = ?
 ");
-$stmt->execute([$paciente['id']]);
-$cirurgias = $stmt->fetch();
-
-// Busca os exercícios do paciente
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as total_exercicios
-    FROM exercicios
-    WHERE id_paciente = ?
-");
-$stmt->execute([$paciente['id']]);
-$exercicios = $stmt->fetch();
+$stmt->execute([$user_id]);
+$perguntas = $stmt->fetch();
 
 ?>
 
@@ -81,7 +67,6 @@ $exercicios = $stmt->fetch();
     <style>
         .card-dashboard {
             transition: transform 0.2s;
-            cursor: pointer;
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -91,21 +76,39 @@ $exercicios = $stmt->fetch();
         }
         .icon-large {
             font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: #0d6efd;
-        }
-        .bg-primary {
-            background-color: #0d6efd !important;
-        }
-        .card-title {
-            font-weight: 600;
             margin-bottom: 0.5rem;
         }
         .card-text {
             color: #6c757d;
         }
+
+        @keyframes pulseGreen {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+                transform: scale(1);
+            }
+            70% {
+                box-shadow: 0 0 20px 10px rgba(40, 167, 69, 0.3);
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+                transform: scale(1);
+            }
+        }
+
+        .card-reabilitacao .card-body.text-center {
+            animation: pulseGreen 2s infinite;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .card-reabilitacao:hover .card-body.text-center {
+            box-shadow: 0 0 25px 15px rgba(40, 167, 69, 0.4);
+        }
     </style>
 </head>
+
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #231F5D;">
         <div class="container">
@@ -116,8 +119,8 @@ $exercicios = $stmt->fetch();
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#perfilModal">
-                            <i class="bi bi-person-circle"></i> Perfil
+                        <a class="nav-link" href="index.php?page=paciente/perfil">
+                            <i class="bi bi-person-circle"></i> Meu Perfil
                         </a>
                     </li>
                     <li class="nav-item">
@@ -134,96 +137,60 @@ $exercicios = $stmt->fetch();
         <div class="row mb-4">
             <div class="col">
                 <h2>Painel do Paciente</h2>
-                <p class="text-muted">Bem-vindo(a), <?php echo htmlspecialchars($paciente['nome']); ?></p>
+                <p class="text-muted">Bem-vindo(a), <?php echo htmlspecialchars($usuario['nome']); ?></p>
+            </div>
+        </div>
+
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-2 text-center">
+                <h1 class="display-5 fw-bold">Bem-vindo ao Central do Joelho!</h1>
+                <p class="col-sd-8 fs-4 mx-auto">
+                    Aqui você pode monitorar seu progresso, acessar exercícios em <a href="index.php?page=paciente/reabilitacao_paciente" class="fw-bold text-primary text-decoration-none">REABILITAÇÃO</a> recomendados e responder perguntas importantes sobre seu tratamento.
+                </p>           
             </div>
         </div>
 
         <div class="row g-4">
-            <!-- Exercícios -->
-            <div class="col-md-3">
-                <a href="index.php?page=paciente/exercicios" class="text-decoration-none">
-                    <div class="card card-dashboard h-100">
-                        <div class="card-body text-center">
-                            <i class="bi bi-activity icon-large text-primary"></i>
-                            <h3 class="card-title"><?php echo $exercicios['total_exercicios']; ?></h3>
-                            <p class="card-text">Exercícios</p>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-3">
+            <!-- Responder -->
+            <div class="col-md-4">
                 <a href="index.php?page=paciente/perguntas" class="text-decoration-none">
                     <div class="card card-dashboard h-100">
                         <div class="card-body text-center">
                             <i class="bi bi-question-circle icon-large text-primary"></i>
-                            <h3 class="card-title">Perguntas</h3>
-                            <p class="card-text">Tire suas dúvidas</p>
+                            <h3 class="card-title"><?php echo $perguntas['total_perguntas']; ?></h3>
+                            <p class="card-text">Responder perguntas</p>
                         </div>
                     </div>
                 </a>
             </div>
 
-            <div class="col-md-3">
-                <a href="index.php?page=paciente/semanas" class="text-decoration-none">
-                    <div class="card card-dashboard h-100">
-                        <div class="card-body text-center">
-                            <i class="bi bi-calendar-week icon-large text-primary"></i>
-                            <h3 class="card-title">Semanas</h3>
-                            <p class="card-text">Acompanhe sua evolução semanal</p>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-3">
-                <a href="index.php?page=paciente/reabilitacao" class="text-decoration-none">
-                    <div class="card card-dashboard h-100">
-                        <div class="card-body text-center">
-                            <i class="bi bi-clipboard2-pulse icon-large text-primary"></i>
+            <!-- Reabilitação -->
+            <div class="col-md-4">
+                <a href="index.php?page=paciente/reabilitacao_paciente" class="text-decoration-none">
+                    <div class="card card-dashboard h-100 card-reabilitacao">
+                        <div class="card-body text-center">                            
+                            <i class="bi bi-calendar-check icon-large" style="color: #28a745;"></i>
                             <h3 class="card-title">Reabilitação</h3>
                             <p class="card-text">Minhas Orientações</p>
+                            <div class="mt-2">
+                                <span class="badge bg-success"><?php echo htmlspecialchars($semanas); ?></span>
+                            </div>
                         </div>
                     </div>
                 </a>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal Perfil -->
-    <div class="modal fade" id="perfilModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Meu Perfil</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nome</label>
-                        <input type="text" class="form-control" value="<?php echo htmlspecialchars($paciente['nome']); ?>" readonly>
+            <!-- Progresso -->
+            <div class="col-md-4">
+                <a href="index.php?page=paciente/progresso" class="text-decoration-none">
+                    <div class="card card-dashboard h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-graph-up icon-large text-primary"></i>
+                            <h3 class="card-title">Progresso</h3>
+                            <p class="card-text">Acompanhe sua evolução</p>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" value="<?php echo htmlspecialchars($paciente['email']); ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Data da Cirurgia</label>
-                        <input type="text" class="form-control" value="<?php echo date('d/m/Y', strtotime($paciente['data_cirurgia'])); ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Médico</label>
-                        <input type="text" class="form-control" value="<?php echo htmlspecialchars($paciente['medico']); ?>" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fisioterapeuta</label>
-                        <input type="text" class="form-control" value="<?php echo htmlspecialchars($paciente['fisioterapeuta']); ?>" readonly>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <button type="button" class="btn btn-primary" onclick="window.location='alterar_senha.php'">Alterar Senha</button>
-                </div>
+                </a>
             </div>
         </div>
     </div>
