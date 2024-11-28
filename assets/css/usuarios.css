@@ -1,0 +1,25 @@
+.sidebar {
+    background-color: #2E4374 !important; /* Novo tom de azul para a sidebar */
+}
+
+.top-navbar {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+}
+
+.top-navbar .breadcrumb-item,
+.top-navbar .breadcrumb-item.active {
+    color: #333333 !important;
+}
+
+.top-navbar .breadcrumb-item + .breadcrumb-item::before {
+    color: #666666 !important;
+}
+
+.top-navbar .btn-link {
+    color: #333333 !important;
+}
+
+.top-navbar .btn-link:hover {
+    color: #000000 !important;
+}
