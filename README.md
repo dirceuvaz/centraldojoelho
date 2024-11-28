@@ -26,7 +26,7 @@ O Central do Joelho é uma plataforma completa para profissionais de fisioterapi
 
 1. Clone o repositório para sua máquina local
 2. Configure seu servidor web (WAMP/XAMPP) apontando para o diretório do projeto
-3. Importe o banco de dados `restoire_central.sql` para seu MySQL
+3. Importe o banco de dados `centraldojoelho.sql` para seu MySQL
 4. Configure as credenciais do banco de dados no arquivo de configuração
 5. Acesse o sistema através do navegador
 
@@ -44,7 +44,7 @@ O sistema utiliza o banco de dados MySQL com codificação UTF-8. Para configura
 O sistema possui diferentes níveis de acesso:
 
 - **Administrador**: Acesso completo ao sistema
-- **Fisioterapeuta**: Gestão de pacientes e tratamentos
+- **Médicos**: Gestão de pacientes
 - **Paciente**: Visualização de seu programa de exercícios e evolução
 
 ## 🔐 Segurança
