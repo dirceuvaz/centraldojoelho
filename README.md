@@ -1,6 +1,6 @@
 # Central do Joelho
 
-Sistema web desenvolvido para gerenciamento de pacientes e reabilitações na área de fisioterapia, com foco especial em tratamentos relacionados ao joelho.
+Sistema web desenvolvido pelo GRUPO 25 para gerenciamento de pacientes e reabilitações na área de fisioterapia, com foco especial em tratamentos relacionados ao joelho.
 
 ## 📋 Descrição
 
@@ -34,7 +34,7 @@ O Central do Joelho é uma plataforma completa para profissionais de fisioterapi
 
 O sistema utiliza o banco de dados MySQL com codificação UTF-8. Para configurar:
 
-1. Crie um banco de dados chamado `restoire_central`
+1. Crie um banco de dados chamado `centraldojoelho`
 2. Configure a codificação para `utf8mb4_unicode_ci`
 3. Importe a estrutura do banco de dados
 4. Configure as credenciais de acesso
